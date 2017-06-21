@@ -4,7 +4,7 @@
 # Interesting post on max line length:
 # http://stackoverflow.com/questions/88942/why-should-python-pep-8-specify-a-maximum-line-length-of-79-characters
 
-PEP8_CMD='pep8'
+PEP8_CMD='flake8'
 PEP8_OPTIONS='--max-line-length=120'
 
 
@@ -26,8 +26,8 @@ _get_files() {
     done < <(git diff --name-only --diff-filter=ACMR --staged -z "$1")
 }
 
-# PEP8
-if ! RESULT=$(git diff -U0 --staged | $PEP8_CMD --diff $PEP8_OPTIONS); then
+# Flake8
+if ! RESULT=$(flake8 $(git status -s | grep -E '\.py$' | cut -c 4-)); then
     echo "${RED}There are PEP8 issues in your code:${RESET}"
     STATUS=1
 fi
@@ -44,7 +44,7 @@ if ! RESULT=$(python -c 'import sys; from isort.hooks import git_hook; sys.exit(
     echo "$RESULT"
     echo
     echo "${CYAN}Run this command to sort the imports:${RESET}"
-    echo "git diff --staged --name-only --diff-filter d '*.py' | xargs isort"
+    echo "git diff --staged --name-only --diff-filter '*.py' | xargs isort"
 fi
 
 

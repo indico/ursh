@@ -4,6 +4,7 @@ import re
 from pip.req import parse_requirements
 from setuptools import find_packages, setup
 
+
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
 with open('urlshortener/__init__.py', 'rb') as f:

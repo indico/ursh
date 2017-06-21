@@ -16,9 +16,9 @@ def create_app(config_file=None):
     """Factory to create the Flask application
 
     :param config_file: A python file from which to load the config.
-                    If omitted, the config file must be set using
-                    the ``URLSHORTENER_CONFIG`` environment variable.
-                    If set, the environment variable is ignored
+                        If omitted, the config file must be set using
+                        the ``URLSHORTENER_CONFIG`` environment variable.
+                        If set, the environment variable is ignored
     :return: A `Flask` application instance
     """
     app = Flask('urlshortener')
@@ -53,8 +53,7 @@ def _setup_db(app):
     app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False
     # ensure all models are imported even if not referenced from already-imported modules
     import_all_models(app.import_name)
-    db.init_app(
-        app)
+    db.init_app(app)
 
 
 def _setup_cli(app):
@@ -65,7 +64,7 @@ def _register_handlers(app):
     @app.shell_context_processor
     def _extend_shell_context():
         ctx = {'db': db}
-        ctx.update(db.Model._decl_class_registry)
+        ctx.update((name, cls) for name, cls in db.Model._decl_class_registry.items() if hasattr(cls, '__table__'))
         ctx.update((x, getattr(datetime, x)) for x in ('date', 'time', 'datetime', 'timedelta'))
         return ctx
 
