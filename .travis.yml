@@ -1,0 +1,11 @@
+sudo: false
+language: python
+python:
+  - 3.5
+install:
+  - pip install pep8
+script:
+  - pep8 --max-line-length 120 urlshortener
+
+notifications:
+  email: false
