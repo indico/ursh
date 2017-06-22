@@ -1,11 +1,11 @@
 sudo: false
 language: python
 python:
-  - 3.5
+  - 3.6
 install:
-  - pip install pep8
+  - pip install flake8
 script:
-  - pep8 --max-line-length 120 urlshortener
+  - flake8 .
 
 notifications:
   email: false
