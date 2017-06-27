@@ -23,6 +23,12 @@ def create_app(config_file=None):
     """
     app = Flask('urlshortener')
     _setup_logger(app)
+    _load_config(app, config_file)
+    _setup_db(app)
+    _setup_cli(app)
+    _register_handlers(app)
+    _register_blueprints(app)
+    return app
 
 
 def _setup_logger(app):
@@ -36,7 +42,7 @@ def _setup_logger(app):
         logging.config.dictConfig(yaml.load(f))
 
 
-def load_config(app, config_file):
+def _load_config(app, config_file):
     app.config.from_pyfile('defaults.cfg')
     if config_file:
         app.config.from_pyfile(config_file)
