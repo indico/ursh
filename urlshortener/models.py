@@ -12,11 +12,11 @@ class Token(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     api_key = db.Column(UUID, unique=True, index=True, default=lambda: str(uuid4()))
-    name = db.Column(db.Text, nullable=False, unique=True)
+    name = db.Column(db.String, nullable=False, unique=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_blocked = db.Column(db.Boolean, nullable=False, default=False)
     token_uses = db.Column(db.Integer, nullable=False, default=0)
-    last_access = db.Column(UtcDateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    last_access = db.Column(UtcDateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     creator = db.Column(db.ForeignKey('tokens.id'))
     urls = db.relationship('URL', backref='token')
 
@@ -26,5 +26,5 @@ class URL(db.Model):
 
     shorturl = db.Column(db.String, primary_key=True)
     url = db.Column(db.String, nullable=False)
-    token_id = db.Column(db.ForeignKey('tokens.id'), nullable="False")
-    custom_data = db.Column(JSONB, default={})
+    token_id = db.Column(db.ForeignKey('tokens.id'), nullable=False)
+    custom_data = db.Column(JSONB, default={}, nullable=False)
