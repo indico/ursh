@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-
 from urlshortener.core.db import db
 
 

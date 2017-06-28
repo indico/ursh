@@ -1,5 +1,4 @@
 from flask.cli import with_appcontext
-
 from urlshortener import db
 
 
