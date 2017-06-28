@@ -5,10 +5,11 @@ import os
 
 import yaml
 from flask import Flask
+from werkzeug.contrib.fixers import ProxyFix
+
 from urlshortener import db
 from urlshortener.core.cli import createdb_command
 from urlshortener.util.db import import_all_models
-from werkzeug.contrib.fixers import ProxyFix
 
 
 def create_app(config_file=None):
