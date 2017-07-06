@@ -4,3 +4,4 @@ from .urls_bp import bp as urls_bp
 
 
 __all__ = [redirection_bp, token_management_bp, urls_bp]
+
