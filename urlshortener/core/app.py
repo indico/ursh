@@ -10,6 +10,7 @@ from werkzeug.contrib.fixers import ProxyFix
 from urlshortener import db
 from urlshortener.core.cli import createdb_command
 from urlshortener.util.db import import_all_models
+from urlshortener.util.nested_query_parser import NestedQueryParser
 
 
 def create_app(config_file=None):
@@ -49,7 +50,8 @@ def _load_config(app, config_file):
     else:
         app.config.from_envvar('URLSHORTENER_CONFIG')
     if app.config['USE_PROXY']:
-        app.wsgi_app = ProxyFix(app.wsgi_app)
+        app.wsgi_app = ProxyFix(app.wsgi_appn)
+    app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
 
 
 def _setup_db(app):

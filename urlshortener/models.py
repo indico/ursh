@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from uuid import uuid4
+from random import choices
 
+from flask import current_app
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utc import UtcDateTime
 
@@ -33,8 +35,21 @@ class URL(db.Model):
     url = db.Column(db.String, nullable=False)
     token_id = db.Column(db.ForeignKey('tokens.id'), nullable=False)
     custom_data = db.Column(JSONB, default={}, nullable=False)
+    allow_reuse = db.Column(db.Boolean, default=False, nullable=False)
 
     token = db.relationship('Token', back_populates='urls')
 
+    def __init__(self):
+        self.shortcut = generate_shortcut()
+
     def __repr__(self):
         return f'<URL({self.id}, {self.shortcut}): {self.url}>'
+
+
+def generate_shortcut():
+    alphabet = '23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
+    shortcut_length = current_app.config.get('URL_LENGTH')
+    while True:
+        candidate = ''.join(choices(alphabet, k=shortcut_length))
+        if URL.query.filter_by(shortcut=candidate).count() == 0:
+            return candidate
