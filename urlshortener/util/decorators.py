@@ -5,18 +5,20 @@ from flask import Response
 from flask_apispec import marshal_with
 
 from urlshortener import db
-from urlshortener.models import Token, URL
+from urlshortener.models import URL, Token
 
 
 def authorize_request(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
+        print('authorizing....')
         token = Token.query.filter_by(api_key=kwargs['auth_token']).one_or_none()
         if token is None or token.is_blocked:
             return Response(status=401)
         token.token_uses += 1
         token.last_access = datetime.now(timezone.utc)
         db.session.commit()
+        kwargs['token'] = token
         return f(*args, **kwargs)
     return wrapper
 
@@ -26,7 +28,7 @@ def admin_only(f):
     def wrapper(*args, **kwargs):
         authorized_function = authorize_request(f)(*args, **kwargs)
         token = Token.query.filter_by(api_key=kwargs['auth_token']).one_or_none()
-        if not token.is_admin:
+        if token and not token.is_admin:
             return Response(status=403)
         else:
             return authorized_function
@@ -55,12 +57,13 @@ def authorize_request_for_url(f):
         token.last_access = datetime.now(timezone.utc)
         db.session.commit()
 
-        shortcut= kwargs['shortcut']
+        shortcut = kwargs['shortcut']
         if shortcut:
             url = URL.query.filter_by(shortcut=shortcut).one_or_none()
-            if url is None:
-                return Response(status=404)
-            if not url.token == token or not token.is_admin:
-                return Response(status=403)
+            if url:
+                if not url.token == token and not token.is_admin:
+                    return Response(status=403)
+
+        kwargs['token'] = token
         return f(*args, **kwargs)
     return wrapper

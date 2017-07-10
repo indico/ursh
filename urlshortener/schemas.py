@@ -1,8 +1,7 @@
 import json
-import re
 
-from marshmallow import fields, post_load, pre_load, pre_dump
 from flask_marshmallow import Schema
+from marshmallow import fields, post_load, pre_dump, pre_load
 
 from urlshortener.models import URL, Token
 
@@ -27,7 +26,8 @@ class URLSchema(Schema):
     url = fields.URL()
     metadata = fields.Str(load_from='custom_data')
     token = fields.Str(required=True, load_from='token.api_key')
-    allow_reuse = fields.Boolean()
+    allow_reuse = fields.Boolean(load_only=True, default=False)
+    all = fields.Boolean(load_only=True, default=False)
 
     @pre_load
     def move_metadata(self, data):
@@ -39,7 +39,6 @@ class URLSchema(Schema):
         metadata = data.get('metadata')
         if metadata:
             data['metadata'] = json.dumps(metadata)
-
         return data
 
     @pre_dump
@@ -47,9 +46,8 @@ class URLSchema(Schema):
         data = {
             'url': data.url,
             'shortcut': data.shortcut,
-            'metadata': data.custom_data,
+            'metadata': json.dumps(data.custom_data),
             'token': data.token.api_key,
-            'allow_reuse': data.allow_reuse
         }
         return data
 

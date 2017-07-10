@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
-from uuid import uuid4
 from random import choices
+from uuid import uuid4
 
 from flask import current_app
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -35,7 +35,6 @@ class URL(db.Model):
     url = db.Column(db.String, nullable=False)
     token_id = db.Column(db.ForeignKey('tokens.id'), nullable=False)
     custom_data = db.Column(JSONB, default={}, nullable=False)
-    allow_reuse = db.Column(db.Boolean, default=False, nullable=False)
 
     token = db.relationship('Token', back_populates='urls')
 
