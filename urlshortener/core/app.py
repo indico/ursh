@@ -50,7 +50,7 @@ def _load_config(app, config_file):
     else:
         app.config.from_envvar('URLSHORTENER_CONFIG')
     if app.config['USE_PROXY']:
-        app.wsgi_app = ProxyFix(app.wsgi_appn)
+        app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
 
 

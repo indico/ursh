@@ -9,7 +9,6 @@ from webargs.flaskparser import FlaskParser
 
 
 class NestedQueryParser(FlaskParser):
-
     def parse_querystring(self, req, name, field):
         return core.get_value(_structure_dict(req.args), name, field)
 

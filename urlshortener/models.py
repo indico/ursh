@@ -31,15 +31,12 @@ class URL(db.Model):
     __tablename__ = 'urls'
 
     id = db.Column(db.Integer, primary_key=True)
-    shortcut = db.Column(db.String, unique=True, index=True)
+    shortcut = db.Column(db.String, unique=True, index=True, default=lambda: generate_shortcut())
     url = db.Column(db.String, nullable=False)
     token_id = db.Column(db.ForeignKey('tokens.id'), nullable=False)
     custom_data = db.Column(JSONB, default={}, nullable=False)
 
     token = db.relationship('Token', back_populates='urls')
-
-    def __init__(self):
-        self.shortcut = generate_shortcut()
 
     def __repr__(self):
         return f'<URL({self.id}, {self.shortcut}): {self.url}>'
@@ -50,5 +47,5 @@ def generate_shortcut():
     shortcut_length = current_app.config.get('URL_LENGTH')
     while True:
         candidate = ''.join(choices(alphabet, k=shortcut_length))
-        if URL.query.filter_by(shortcut=candidate).count() == 0:
+        if not URL.query.filter_by(shortcut=candidate).count():
             return candidate
