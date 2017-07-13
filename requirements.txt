@@ -6,3 +6,4 @@ PyYAML==3.12
 SQLAlchemy-Utc==0.9.0
 flask-apispec==0.4.0
 flask-marshmallow==0.8.0
+marshmallow-sqlalchemy==0.13.1
