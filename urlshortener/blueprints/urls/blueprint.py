@@ -26,10 +26,9 @@ bp.add_url_rule('/urls/<shortcut>', view_func=urls_view)
 @bp.before_request
 def authorize_request():
     auth_token = get_token()
-    print(auth_token)
-    if not auth_token:
-        return BadRequest
     error_json = create_error_json(401, 'invalid-token', 'The token you have entered is invalid')
+    if not auth_token:
+        return error_json
     try:
         token = Token.query.filter_by(api_key=auth_token).one_or_none()
     except DataError:
