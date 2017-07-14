@@ -1,8 +1,9 @@
 from functools import wraps
 
-from flask import g, jsonify
+from flask import g
 from flask_apispec import marshal_with
 
+from urlshortener.blueprints.urls.errors import create_error_json
 from urlshortener.models import URL
 
 
@@ -10,9 +11,7 @@ def admin_only(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if g.token and not g.token.is_admin:
-            return jsonify({'status': 403,
-                            'error': {'code': 'insufficient-permissions',
-                                      'message': 'You are not allowed to make this request'}}), 403
+            return create_error_json(403, 'insufficient-permissions', 'You are not allowed to make this request')
         else:
             return f(*args, **kwargs)
     return wrapper
@@ -37,8 +36,6 @@ def authorize_request_for_url(f):
         if shortcut:
             url = URL.query.filter_by(shortcut=shortcut).one_or_none()
             if url and url.token != g.token and not g.token.is_admin:
-                return jsonify({'status': 403,
-                                'error': {'code': 'insufficient-permissions',
-                                          'message': 'You are not allowed to make this request'}}), 403
+                return create_error_json(403, 'insufficient-permissions', 'You are not allowed to make this request')
         return f(*args, **kwargs)
     return wrapper
