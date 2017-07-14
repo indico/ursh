@@ -1,6 +1,6 @@
-from .redirection_bp import bp as redirection_bp
-from .token_management_bp import bp as token_management_bp
-from .urls_bp import bp as urls_bp
+from .redirection import bp as redirection
+from .token_management import bp as token_management
+from .urls import bp as urls
 
 
-__all__ = [redirection_bp, token_management_bp, urls_bp]
+__all__ = [redirection, token_management, urls]

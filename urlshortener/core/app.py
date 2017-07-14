@@ -78,7 +78,7 @@ def _register_handlers(app):
 
 
 def _register_blueprints(app):
-    from urlshortener.blueprints import urls_bp, redirection_bp, token_management_bp
-    app.register_blueprint(urls_bp)
-    app.register_blueprint(redirection_bp)
-    app.register_blueprint(token_management_bp)
+    from urlshortener.blueprints import urls, redirection, token_management
+    app.register_blueprint(urls)
+    app.register_blueprint(redirection)
+    app.register_blueprint(token_management)

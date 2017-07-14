@@ -23,7 +23,7 @@ class TokenSchema(Schema):
 class URLSchema(Schema):
     auth_token = fields.Str(required=True, load_only=True, location='headers')
     shortcut = fields.Str(required=True)
-    url = fields.URL()
+    url = fields.URL(strict=True)
     metadata = fields.Dict(load_from='custom_data')
     token = fields.Str(required=True, load_from='token.api_key')
     allow_reuse = fields.Boolean(load_only=True, default=False)
