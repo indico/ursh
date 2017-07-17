@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+import re
 
 from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
@@ -168,14 +168,14 @@ def generate_bad_request(error_code, message, **kwargs):
 
 
 def validate_callback_url(url):
-    if url is None:
-        return True
-    min_attrs = ('scheme', 'netloc')
-    try:
-        result = urlparse(url)
-        if not all([getattr(result, attr) for attr in min_attrs]):
-            return False
-        else:
-            return True
-    except:
-        return False
+    """
+    regex is taken from Django https://github.com/django/django/blob/master/django/core/validators.py#L47
+    """
+    regex = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url is None or regex.search(url)
