@@ -3,7 +3,7 @@ from functools import wraps
 from flask import g
 from flask_apispec import marshal_with
 
-from urlshortener.blueprints.urls.errors import create_error_json
+from urlshortener.blueprints.urls.handlers import create_error_json
 from urlshortener.models import URL
 
 

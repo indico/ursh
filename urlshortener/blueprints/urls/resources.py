@@ -1,9 +1,10 @@
+from urllib.parse import urlparse
+
 from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed
 
 from urlshortener import db
-from urlshortener.blueprints.urls.errors import ShortcutAlreadyExistsError
 from urlshortener.models import URL, Token
 from urlshortener.schemas import TokenSchema, URLSchema
 from urlshortener.util.decorators import admin_only, authorize_request_for_url, marshal_many_or_one
@@ -16,7 +17,11 @@ class TokenResource(MethodResource):
     def post(self, **kwargs):
         if kwargs.get('name') is None:
             raise generate_bad_request('missing-args', 'New tokens need to mention the "name" attribute', args=['name'])
+        if Token.query.filter_by(name=kwargs['name']).count() != 0:
+            raise Conflict({'message': 'Token with name exists', 'args': ['name']})
         new_token = Token()
+        if validate_callback_url(kwargs.get('callback_url')):
+            raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(new_token, kwargs, ('name', 'is_admin', 'is_blocked', 'callback_url'))
         db.session.add(new_token)
         db.session.commit()
@@ -28,9 +33,10 @@ class TokenResource(MethodResource):
     @admin_only
     def patch(self, api_key, **kwargs):
         if not api_key:
-            raise generate_bad_request('missing-args', 'Request needs to mention the API key you want to change',
-                                       args=['api_key'])
+            raise MethodNotAllowed
         token = Token.query.filter_by(api_key=api_key).one_or_none()
+        if validate_callback_url(kwargs.get('callback_url')):
+            raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
         db.session.commit()
         return token
@@ -39,8 +45,7 @@ class TokenResource(MethodResource):
     @admin_only
     def delete(self, api_key, **kwargs):
         if not api_key:
-            raise generate_bad_request('missing-args', 'Request needs to mention the API key you want to change',
-                                       args=['api_key'])
+            raise MethodNotAllowed
         token = Token.query.filter_by(api_key=api_key).one_or_none()
         if token is not None:
             db.session.delete(token)
@@ -92,7 +97,7 @@ class URLResource(MethodResource):
             if kwargs.get('allow_reuse'):
                 return existing_url
             else:
-                raise ShortcutAlreadyExistsError
+                raise Conflict({'message': 'Shortcut already exists', 'args': ['shortcut']})
         new_url = create_new_url(data=kwargs, shortcut=shortcut)
         db.session.add(new_url)
         db.session.commit()
@@ -104,8 +109,7 @@ class URLResource(MethodResource):
     @authorize_request_for_url
     def patch(self, shortcut, **kwargs):
         if not shortcut:
-            raise generate_bad_request('missing-args', 'Request needs to mention the shortcut you wish to modify',
-                                       args=['shortcut'])
+            raise MethodNotAllowed
         metadata = kwargs.get('metadata')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
@@ -119,8 +123,7 @@ class URLResource(MethodResource):
     @authorize_request_for_url
     def delete(self, shortcut, **kwargs):
         if not shortcut:
-            raise generate_bad_request('missing-args', 'Request needs to mention the shortcut you wish to modify',
-                                       args=['shortcut'])
+            raise MethodNotAllowed
         url = URL.query.filter_by(shortcut=shortcut).first_or_404()
         db.session.delete(url)
         db.session.commit()
@@ -139,9 +142,7 @@ class URLResource(MethodResource):
                 filters.append(URL.custom_data.contains(metadata))
             return URL.query.filter(*filters).all()
         else:
-            url = URL.query.filter_by(shortcut=shortcut).first_or_404()
-
-            return url
+            return URL.query.filter_by(shortcut=shortcut).first_or_404()
 
 
 def populate_from_dict(obj, values, fields):
@@ -154,12 +155,8 @@ def create_new_url(data, shortcut=None):
     metadata = data.get('metadata')
     if not metadata:
         metadata = {}
-    url_exists = URL.query.filter_by(shortcut=shortcut).one_or_none
-    if url_exists:
-        URL
     new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
     populate_from_dict(new_url, data, ('url', 'allow_reuse'))
-
     return new_url
 
 
@@ -168,3 +165,17 @@ def generate_bad_request(error_code, message, **kwargs):
                     'description': message}
     message_dict.update(kwargs)
     return BadRequest(message_dict)
+
+
+def validate_callback_url(url):
+    if url is None:
+        return True
+    min_attrs = ('scheme', 'netloc')
+    try:
+        result = urlparse(url)
+        if not all([getattr(result, attr) for attr in min_attrs]):
+            return False
+        else:
+            return True
+    except:
+        return False

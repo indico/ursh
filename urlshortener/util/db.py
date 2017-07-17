@@ -22,7 +22,7 @@ def import_all_models(package_name):
             package = os.path.relpath(root, package_root).replace(os.sep, '.')
             modules += ['{}.{}.{}'.format(package_name, package, name[:-3])
                         for name in files
-                        if name.endswith('.py') and name != '__init__.py' and not name.endswith('_test.py')]
+                        if name.endswith('.py') and name != 'blueprint.py' and not name.endswith('_test.py')]
 
     for module in modules:
         import_module(module)
