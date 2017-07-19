@@ -11,16 +11,16 @@ from urlshortener.util.decorators import admin_only, authorize_request_for_url, 
 
 
 class TokenResource(MethodResource):
+    @admin_only
     @marshal_with(TokenSchema, code=201)
     @use_kwargs(TokenSchema)
-    @admin_only
     def post(self, **kwargs):
         if kwargs.get('name') is None:
             raise generate_bad_request('missing-args', 'New tokens need to mention the "name" attribute', args=['name'])
         if Token.query.filter_by(name=kwargs['name']).count() != 0:
             raise Conflict({'message': 'Token with name exists', 'args': ['name']})
         new_token = Token()
-        if validate_callback_url(kwargs.get('callback_url')):
+        if not validate_callback_url(kwargs.get('callback_url')):
             raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(new_token, kwargs, ('name', 'is_admin', 'is_blocked', 'callback_url'))
         db.session.add(new_token)
@@ -28,9 +28,9 @@ class TokenResource(MethodResource):
 
         return new_token, 201
 
+    @admin_only
     @marshal_with(TokenSchema(), code=200)
     @use_kwargs(TokenSchema)
-    @admin_only
     def patch(self, api_key, **kwargs):
         if not api_key:
             raise MethodNotAllowed
@@ -41,8 +41,8 @@ class TokenResource(MethodResource):
         db.session.commit()
         return token
 
-    @use_kwargs(TokenSchema)
     @admin_only
+    @use_kwargs(TokenSchema)
     def delete(self, api_key, **kwargs):
         if not api_key:
             raise MethodNotAllowed
@@ -54,9 +54,9 @@ class TokenResource(MethodResource):
         else:
             return Response(status=404)
 
+    @admin_only
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
     @use_kwargs(TokenSchema)
-    @admin_only
     def get(self, api_key, **kwargs):
         if api_key is None:
             filter_params = ['name', 'is_admin', 'is_blocked']
@@ -85,9 +85,9 @@ class URLResource(MethodResource):
 
         return new_url, 201
 
-    @marshal_with(URLSchema(strict=True), code=201)
     @use_kwargs(URLSchema)
     @authorize_request_for_url
+    @marshal_with(URLSchema(strict=True), code=201)
     def put(self, shortcut, **kwargs):
         if not kwargs.get('url'):
             raise generate_bad_request('missing-args', 'URL invalid or missing',
@@ -105,8 +105,8 @@ class URLResource(MethodResource):
         return new_url, 201
 
     @use_kwargs(URLSchema)
-    @marshal_with(URLSchema)
     @authorize_request_for_url
+    @marshal_with(URLSchema)
     def patch(self, shortcut, **kwargs):
         if not shortcut:
             raise MethodNotAllowed
@@ -129,9 +129,9 @@ class URLResource(MethodResource):
         db.session.commit()
         return Response(status=204)
 
-    @marshal_many_or_one(URLSchema, 'shortcut')
     @use_kwargs(URLSchema)
     @authorize_request_for_url
+    @marshal_many_or_one(URLSchema, 'shortcut')
     def get(self, shortcut=None, **kwargs):
         if shortcut is None:
             metadata = kwargs.get('metadata')
@@ -153,6 +153,7 @@ def populate_from_dict(obj, values, fields):
 
 def create_new_url(data, shortcut=None):
     metadata = data.get('metadata')
+    print(metadata)
     if not metadata:
         metadata = {}
     new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
@@ -168,14 +169,5 @@ def generate_bad_request(error_code, message, **kwargs):
 
 
 def validate_callback_url(url):
-    """
-    regex is taken from Django https://github.com/django/django/blob/master/django/core/validators.py#L47
-    """
-    regex = re.compile(
-        r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    return url is None or regex.search(url)
+    regex = re.compile(r'^https?://[^/:]+(:[0-9]+)?(/.*)?$')
+    return url is None or regex.match(url) is not None

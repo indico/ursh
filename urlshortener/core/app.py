@@ -13,7 +13,7 @@ from urlshortener.util.db import import_all_models
 from urlshortener.util.nested_query_parser import NestedQueryParser
 
 
-def create_app(config_file=None):
+def create_app(config_file=None, testing=False):
     """Factory to create the Flask application
 
     :param config_file: A python file from which to load the config.
@@ -23,6 +23,7 @@ def create_app(config_file=None):
     :return: A `Flask` application instance
     """
     app = Flask('urlshortener')
+    app.testing = testing
     _setup_logger(app)
     _load_config(app, config_file)
     _setup_db(app)
