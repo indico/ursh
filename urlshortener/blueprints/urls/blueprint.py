@@ -54,5 +54,5 @@ def get_token():
 bp.register_error_handler(BadRequest, handle_bad_requests)
 bp.register_error_handler(SQLAlchemyError, handle_db_errors)
 bp.register_error_handler(Conflict, handle_conflict)
-bp.register_error_handler(Exception, handle_internal_exceptions)
 bp.register_error_handler(MethodNotAllowed, handle_method_not_allowed)
+bp.register_error_handler(Exception, handle_internal_exceptions)
