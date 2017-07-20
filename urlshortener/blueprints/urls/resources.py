@@ -1,4 +1,5 @@
 import re
+from uuid import UUID
 
 from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
@@ -25,7 +26,6 @@ class TokenResource(MethodResource):
         populate_from_dict(new_token, kwargs, ('name', 'is_admin', 'is_blocked', 'callback_url'))
         db.session.add(new_token)
         db.session.commit()
-
         return new_token, 201
 
     @admin_only
@@ -34,8 +34,14 @@ class TokenResource(MethodResource):
     def patch(self, api_key, **kwargs):
         if not api_key:
             raise MethodNotAllowed
+        try:
+            UUID(api_key)
+        except ValueError:
+            raise generate_bad_request('missing-args', 'API key should be a valid UUID', args=['api_key'])
         token = Token.query.filter_by(api_key=api_key).one_or_none()
-        if validate_callback_url(kwargs.get('callback_url')):
+        if token is None:
+            raise generate_bad_request('missing-args', 'API key does not exist', args=['api_key'])
+        if not validate_callback_url(kwargs.get('callback_url')):
             raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
         db.session.commit()
@@ -59,11 +65,15 @@ class TokenResource(MethodResource):
     @use_kwargs(TokenSchema)
     def get(self, api_key, **kwargs):
         if api_key is None:
-            filter_params = ['name', 'is_admin', 'is_blocked']
+            filter_params = ['name', 'is_admin', 'is_blocked', 'callback_url']
             filter_dict = {key: value for key, value in kwargs.items() if key in filter_params}
             tokens = Token.query.filter_by(**filter_dict)
             return tokens
         else:
+            try:
+                UUID(api_key)
+            except ValueError:
+                raise generate_bad_request('missing-args', 'API key should be a valid UUID', args=['api_key'])
             token = Token.query.filter_by(api_key=api_key).one_or_none()
             if not token:
                 return Response(status=404)
@@ -153,7 +163,6 @@ def populate_from_dict(obj, values, fields):
 
 def create_new_url(data, shortcut=None):
     metadata = data.get('metadata')
-    print(metadata)
     if not metadata:
         metadata = {}
     new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
@@ -168,6 +177,5 @@ def generate_bad_request(error_code, message, **kwargs):
     return BadRequest(message_dict)
 
 
-def validate_callback_url(url):
-    regex = re.compile(r'^https?://[^/:]+(:[0-9]+)?(/.*)?$')
-    return url is None or regex.match(url) is not None
+def validate_callback_url(url, _re=re.compile(r'^https?://[^/:]+(:[0-9]+)?(/.*)?$')):
+    return url is None or _re.match(url) is not None
