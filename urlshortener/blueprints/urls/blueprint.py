@@ -2,12 +2,12 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, g, request
 from sqlalchemy.exc import DataError, SQLAlchemyError
-from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed
+from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from urlshortener import db
 from urlshortener.blueprints.urls.handlers import (create_error_json, handle_bad_requests, handle_conflict,
                                                    handle_db_errors, handle_internal_exceptions,
-                                                   handle_method_not_allowed)
+                                                   handle_method_not_allowed, handle_not_found)
 from urlshortener.blueprints.urls.resources import TokenResource, URLResource
 from urlshortener.models import Token
 
@@ -54,5 +54,6 @@ def get_token():
 bp.register_error_handler(BadRequest, handle_bad_requests)
 bp.register_error_handler(SQLAlchemyError, handle_db_errors)
 bp.register_error_handler(Conflict, handle_conflict)
+bp.register_error_handler(NotFound, handle_not_found)
 bp.register_error_handler(MethodNotAllowed, handle_method_not_allowed)
 bp.register_error_handler(Exception, handle_internal_exceptions)

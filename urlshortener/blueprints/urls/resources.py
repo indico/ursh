@@ -3,7 +3,7 @@ from uuid import UUID
 
 from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
-from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed
+from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from urlshortener import db
 from urlshortener.models import URL, Token
@@ -37,10 +37,10 @@ class TokenResource(MethodResource):
         try:
             UUID(api_key)
         except ValueError:
-            raise generate_bad_request('missing-args', 'API key should be a valid UUID', args=['api_key'])
+            raise NotFound({'message': 'API key should be a valid UUID', 'args': ['api_key']})
         token = Token.query.filter_by(api_key=api_key).one_or_none()
         if token is None:
-            raise generate_bad_request('missing-args', 'API key does not exist', args=['api_key'])
+            raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
         if not validate_callback_url(kwargs.get('callback_url')):
             raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
@@ -73,10 +73,10 @@ class TokenResource(MethodResource):
             try:
                 UUID(api_key)
             except ValueError:
-                raise generate_bad_request('missing-args', 'API key should be a valid UUID', args=['api_key'])
+                raise NotFound({'message': 'API key should be a valid UUID', 'args': ['api_key']})
             token = Token.query.filter_by(api_key=api_key).one_or_none()
             if not token:
-                return Response(status=404)
+                raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
             return token
 
 

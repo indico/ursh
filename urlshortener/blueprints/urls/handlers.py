@@ -9,6 +9,10 @@ def handle_db_errors(error):
     return create_error_json(400, 'invalid-input', 'Your input is invalid')
 
 
+def handle_not_found(error):
+    return create_error_json(404, 'not-found', error.description.get('message'), args=error.description.get('args'))
+
+
 def handle_method_not_allowed(error):
     return create_error_json(405, 'invalid-method', 'This HTTP method is not allowed')
 
