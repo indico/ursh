@@ -37,7 +37,7 @@ class TokenResource(MethodResource):
         try:
             UUID(api_key)
         except ValueError:
-            raise NotFound({'message': 'API key should be a valid UUID', 'args': ['api_key']})
+            raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
         token = Token.query.filter_by(api_key=api_key).one_or_none()
         if token is None:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
@@ -58,7 +58,7 @@ class TokenResource(MethodResource):
             db.session.commit()
             return Response(status=204)
         else:
-            return Response(status=404)
+            raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
 
     @admin_only
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
@@ -73,7 +73,7 @@ class TokenResource(MethodResource):
             try:
                 UUID(api_key)
             except ValueError:
-                raise NotFound({'message': 'API key should be a valid UUID', 'args': ['api_key']})
+                raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
             token = Token.query.filter_by(api_key=api_key).one_or_none()
             if not token:
                 raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
@@ -88,7 +88,7 @@ class URLResource(MethodResource):
             raise generate_bad_request('missing-args', 'URL invalid or missing',
                                        args=['url'])
         if kwargs['shortcut']:
-            return Response(status=404)
+            raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
         new_url = create_new_url(data=kwargs)
         db.session.add(new_url)
         db.session.commit()
@@ -123,7 +123,7 @@ class URLResource(MethodResource):
         metadata = kwargs.get('metadata')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
-            return Response(status=404)
+            raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
         url.custom_data = metadata
         populate_from_dict(url, kwargs, ('shortcut', 'url', 'allow_reuse'))
         db.session.commit()
