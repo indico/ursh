@@ -14,6 +14,7 @@ install:
 script:
   - flake8 .
   - isort --check-only --diff --quiet
+  - pytest
 
 notifications:
   email: false
