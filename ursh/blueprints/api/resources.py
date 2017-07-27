@@ -5,10 +5,10 @@ from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
-from urlshortener import db
-from urlshortener.models import URL, Token
-from urlshortener.schemas import TokenSchema, URLSchema
-from urlshortener.util.decorators import admin_only, authorize_request_for_url, marshal_many_or_one
+from ursh import db
+from ursh.models import URL, Token
+from ursh.schemas import TokenSchema, URLSchema
+from ursh.util.decorators import admin_only, authorize_request_for_url, marshal_many_or_one
 
 
 class TokenResource(MethodResource):

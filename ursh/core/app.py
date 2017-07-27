@@ -7,10 +7,10 @@ import yaml
 from flask import Flask
 from werkzeug.contrib.fixers import ProxyFix
 
-from urlshortener import db
-from urlshortener.core.cli import createdb_command
-from urlshortener.util.db import import_all_models
-from urlshortener.util.nested_query_parser import NestedQueryParser
+from ursh import db
+from ursh.core.cli import createdb_command
+from ursh.util.db import import_all_models
+from ursh.util.nested_query_parser import NestedQueryParser
 
 
 def create_app(config_file=None, testing=False):
@@ -22,7 +22,7 @@ def create_app(config_file=None, testing=False):
                         If set, the environment variable is ignored
     :return: A `Flask` application instance
     """
-    app = Flask('urlshortener')
+    app = Flask('ursh')
     app.testing = testing
     _setup_logger(app)
     _load_config(app, config_file)
@@ -37,7 +37,7 @@ def _setup_logger(app):
     # Create our own logger since Flask's DebugLogger is a pain
     app._logger = logging.getLogger(app.logger_name)
     try:
-        path = os.environ['URLSHORTENER_LOGGING_CONFIG']
+        path = os.environ['URSH_LOGGING_CONFIG']
     except KeyError:
         path = os.path.join(app.root_path, 'logging.yml')
     with open(path) as f:
@@ -49,7 +49,7 @@ def _load_config(app, config_file):
     if config_file:
         app.config.from_pyfile(config_file)
     else:
-        app.config.from_envvar('URLSHORTENER_CONFIG')
+        app.config.from_envvar('URSH_CONFIG')
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
@@ -79,7 +79,6 @@ def _register_handlers(app):
 
 
 def _register_blueprints(app):
-    from urlshortener.blueprints import urls, redirection, token_management
-    app.register_blueprint(urls)
+    from ursh.blueprints import api, redirection
+    app.register_blueprint(api)
     app.register_blueprint(redirection)
-    app.register_blueprint(token_management)

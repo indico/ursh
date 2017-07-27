@@ -7,13 +7,13 @@ from setuptools import find_packages, setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('urlshortener/__init__.py', 'rb') as f:
+with open('ursh/__init__.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(f.read().decode('utf-8')).group(1)))
 
 requirements = [str(x.req) for x in parse_requirements('requirements.txt', session=False)]
 
 setup(
-    name='urlshortener',
+    name='ursh',
     version=version,
     description='A URL shortening microservice',
     url='https://github.com/nurav/urlshortener',

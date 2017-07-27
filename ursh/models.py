@@ -6,7 +6,7 @@ from flask import current_app
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utc import UtcDateTime
 
-from urlshortener import db
+from ursh import db
 
 
 class Token(db.Model):
@@ -44,7 +44,7 @@ class URL(db.Model):
 
 def generate_shortcut():
     alphabet = '23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
-    shortcut_length = current_app.config.get('URL_LENGTH')
+    shortcut_length = current_app.config.get('URL_LENGTH', 5)
     while True:
         candidate = ''.join(choices(alphabet, k=shortcut_length))
         if not URL.query.filter_by(shortcut=candidate).count():

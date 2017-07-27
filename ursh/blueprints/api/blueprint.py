@@ -4,12 +4,11 @@ from flask import Blueprint, g, request
 from sqlalchemy.exc import DataError, SQLAlchemyError
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
-from urlshortener import db
-from urlshortener.blueprints.urls.handlers import (create_error_json, handle_bad_requests, handle_conflict,
-                                                   handle_db_errors, handle_internal_exceptions,
-                                                   handle_method_not_allowed, handle_not_found)
-from urlshortener.blueprints.urls.resources import TokenResource, URLResource
-from urlshortener.models import Token
+from ursh import db
+from ursh.blueprints.api.handlers import (create_error_json, handle_bad_requests, handle_conflict, handle_db_errors,
+                                          handle_internal_exceptions, handle_method_not_allowed, handle_not_found)
+from ursh.blueprints.api.resources import TokenResource, URLResource
+from ursh.models import Token
 
 
 bp = Blueprint('urls', __name__)

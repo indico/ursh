@@ -1,6 +1,6 @@
 from flask.cli import with_appcontext
 
-from urlshortener import db
+from ursh import db
 
 
 @with_appcontext

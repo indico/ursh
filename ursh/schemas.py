@@ -3,7 +3,7 @@ import json
 from flask_marshmallow import Schema
 from marshmallow import fields, post_load, pre_dump
 
-from urlshortener.models import URL, Token
+from ursh.models import URL, Token
 
 
 class TokenSchema(Schema):

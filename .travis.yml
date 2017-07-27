@@ -1,7 +1,12 @@
 sudo: false
 language: python
+services:
+  - postgresql
 python:
   - 3.6
+env:
+  global:
+    - URSH_CONFIG=/dev/null
 install:
   - pip install flake8
   - pip install isort

@@ -3,8 +3,8 @@ from functools import wraps
 from flask import g
 from flask_apispec import marshal_with
 
-from urlshortener.blueprints.urls.handlers import create_error_json
-from urlshortener.models import URL
+from ursh.blueprints.api.handlers import create_error_json
+from ursh.models import URL
 
 
 def admin_only(f):
