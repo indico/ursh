@@ -1,3 +1,4 @@
+import logging
 from flask import jsonify
 
 
@@ -22,6 +23,7 @@ def handle_conflict(error):
 
 
 def handle_internal_exceptions(error):
+    logging.exception(error)
     return create_error_json(500, 'internal-error', 'Sorry, something went wrong')
 
 
