@@ -4,11 +4,8 @@ import shutil
 import signal
 import subprocess
 import tempfile
-from contextlib import contextmanager
 
 import pytest
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
 
 from ursh.core.app import create_app
 from ursh.core.db import db as db_
@@ -42,7 +39,7 @@ def client(app):
 @pytest.fixture(scope='session')
 def postgresql():
     """Provides a clean temporary PostgreSQL server/database.
-    If the environment variable `URLSHORTENER_TEST_DATABASE_URI` is set, this fixture
+    If the environment variable `URSH_TEST_DATABASE_URI` is set, this fixture
     will do nothing and simply return the connection string from that variable
     """
 
@@ -106,7 +103,7 @@ def database(app, postgresql):
     """
     app.config['SQLALCHEMY_DATABASE_URI'] = postgresql
     db_.init_app(app)
-    if 'URLSHORTENERTEST_DATABASE_URI' in os.environ and os.environ.get('URLSHORTENER_TEST_DATABASE_HAS_TABLES') == '1':
+    if 'URSH_TEST_DATABASE_URI' in os.environ == '1':
         yield db_
         return
     with app.app_context():
@@ -126,34 +123,3 @@ def db(database, monkeypatch):
     yield database
     database.session.rollback()
     database.session.remove()
-
-
-@pytest.fixture
-@pytest.mark.usefixtures('db')
-def count_queries():
-    """Provides a query counter.
-    Usage::
-        with count_queries() as count:
-            do_stuff()
-        assert count() == number_of_queries
-    """
-    def _after_cursor_execute(*args, **kwargs):
-        if active_counter[0]:
-            active_counter[0][0] += 1
-
-    @contextmanager
-    def _counter():
-        if active_counter[0]:
-            raise RuntimeError('Cannot nest count_queries calls')
-        active_counter[0] = counter = [0]
-        try:
-            yield lambda: counter[0]
-        finally:
-            active_counter[0] = None
-
-    active_counter = [None]
-    event.listen(Engine, 'after_cursor_execute', _after_cursor_execute)
-    try:
-        yield _counter
-    finally:
-        event.remove(Engine, 'after_cursor_execute', _after_cursor_execute)

@@ -14,11 +14,11 @@ from ursh.models import Token
 bp = Blueprint('urls', __name__)
 
 tokens_view = TokenResource.as_view('tokens')
-bp.add_url_rule('/tokens/', defaults={'api_key': None}, view_func=tokens_view)
+bp.add_url_rule('/tokens/', view_func=tokens_view)
 bp.add_url_rule('/tokens/<api_key>', view_func=tokens_view)
 
 urls_view = URLResource.as_view('urls')
-bp.add_url_rule('/urls/', defaults={'shortcut': None}, view_func=urls_view)
+bp.add_url_rule('/urls/', view_func=urls_view)
 bp.add_url_rule('/urls/<shortcut>', view_func=urls_view)
 
 

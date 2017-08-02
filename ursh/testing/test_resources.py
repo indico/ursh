@@ -53,6 +53,13 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         201
     ),
     (
+        # new token is issued without callback
+        True,
+        {'name': 'abc', 'is_admin': True},
+        {'is_admin': True, 'is_blocked': False, 'name': 'abc', 'token_uses': 0},
+        201
+    ),
+    (
         # name is not mentioned
         True,
         {'is_admin': True, 'callback_url': 'http://cern.ch'},
@@ -64,8 +71,8 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         # invalid callback URL
         True,
         {'name': 'abc', 'callback_url': 'fake'},
-        {'error': {'args': ['callback_url'], 'code': 'missing-args',
-                   'description': 'Callback URL is invalid'}, 'status': 400},
+        {'error': {'args': ['callback_url'], 'code': 'validation-error',
+                   'messages': {'callback_url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
@@ -330,21 +337,21 @@ def test_blocked_or_unauthorized(client, blocked_auth, method, url, data, blocke
     (
         # invalid url
         {'url': 'fake'},
-        {'error': {'args': ['url'], 'code': 'missing-args',
-                   'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         {'url': ''},
-        {'error': {'args': ['url'], 'code': 'missing-args',
-                   'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # allow_reuse=true
         {'url': 'http://existing.com', 'allow_reuse': True},
-        {},
+        {'metadata': '{}', 'url': 'http://existing.com'},
         400
     )
 ])
@@ -397,14 +404,16 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
         # invalid url
         "my-short-url",
         {'url': 'google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['url'], 'code': 'missing-args', 'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "my-short-url",
         {'url': '', 'metadata.author': 'me'},
-        {'error': {'args': ['url'], 'code': 'missing-args', 'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
 ])
@@ -441,14 +450,16 @@ def test_put_url(client, non_admin_auth, name, data, expected, status):
         # invalid url
         "abc",
         {'metadata.author': 'me', 'url': 'example.com'},
-        {'error': {'args': ['url'], 'code': 'missing-args', 'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "abc",
         {'metadata.author': 'me', 'url': ''},
-        {'error': {'args': ['url'], 'code': 'missing-args', 'description': 'URL invalid or missing'}, 'status': 400},
+        {'error': {'args': ['url'], 'code': 'validation-error',
+                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
 ])

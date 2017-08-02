@@ -1,7 +1,6 @@
-import re
 from uuid import UUID
 
-from flask import Response, g, jsonify
+from flask import Response, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
@@ -21,8 +20,6 @@ class TokenResource(MethodResource):
         if Token.query.filter_by(name=kwargs['name']).count() != 0:
             raise Conflict({'message': 'Token with name exists', 'args': ['name']})
         new_token = Token()
-        if not None and not validate_url(kwargs.get('callback_url')):
-            raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(new_token, kwargs, ('name', 'is_admin', 'is_blocked', 'callback_url'))
         db.session.add(new_token)
         db.session.commit()
@@ -31,7 +28,7 @@ class TokenResource(MethodResource):
     @admin_only
     @marshal_with(TokenSchema(), code=200)
     @use_kwargs(TokenSchema)
-    def patch(self, api_key, **kwargs):
+    def patch(self, api_key=None, **kwargs):
         if not api_key:
             raise MethodNotAllowed
         try:
@@ -41,15 +38,13 @@ class TokenResource(MethodResource):
         token = Token.query.filter_by(api_key=api_key).one_or_none()
         if token is None:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
-        if not None and not validate_url(kwargs.get('callback_url')):
-            raise generate_bad_request('missing-args', 'Callback URL is invalid', args=['callback_url'])
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
         db.session.commit()
         return token
 
     @admin_only
     @use_kwargs(TokenSchema)
-    def delete(self, api_key, **kwargs):
+    def delete(self, api_key=None, **kwargs):
         if not api_key:
             raise MethodNotAllowed
         token = Token.query.filter_by(api_key=api_key).one_or_none()
@@ -63,7 +58,7 @@ class TokenResource(MethodResource):
     @admin_only
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
     @use_kwargs(TokenSchema)
-    def get(self, api_key, **kwargs):
+    def get(self, api_key=None, **kwargs):
         if api_key is None:
             filter_params = ['name', 'is_admin', 'is_blocked', 'callback_url']
             filter_dict = {key: value for key, value in kwargs.items() if key in filter_params}
@@ -84,12 +79,12 @@ class URLResource(MethodResource):
     @marshal_with(URLSchema(strict=True), code=201)
     @use_kwargs(URLSchema)
     def post(self, **kwargs):
-        posted_url = kwargs.get('url')
-        if posted_url is None or not validate_url(posted_url):
-            raise generate_bad_request('missing-args', 'URL invalid or missing',
-                                       args=['url'])
-        if kwargs['shortcut']:
-            raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
+        if not kwargs.get('url'):
+            raise generate_bad_request('missing-args', 'URL missing', args=['url'])
+        if kwargs.get('allow_reuse'):
+            existing_url = URL.query.filter_by(url=kwargs.get('url')).one_or_none()
+            if existing_url:
+                return existing_url, 201
         new_url = create_new_url(data=kwargs)
         db.session.add(new_url)
         db.session.commit()
@@ -99,11 +94,7 @@ class URLResource(MethodResource):
     @use_kwargs(URLSchema)
     @authorize_request_for_url
     @marshal_with(URLSchema(strict=True), code=201)
-    def put(self, shortcut, **kwargs):
-        posted_url = kwargs.get('url')
-        if posted_url is None or not validate_url(posted_url):
-            raise generate_bad_request('missing-args', 'URL invalid or missing',
-                                       args=['url'])
+    def put(self, shortcut=None, **kwargs):
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
             if kwargs.get('allow_reuse'):
@@ -118,17 +109,13 @@ class URLResource(MethodResource):
     @use_kwargs(URLSchema)
     @authorize_request_for_url
     @marshal_with(URLSchema)
-    def patch(self, shortcut, **kwargs):
+    def patch(self, shortcut=None, **kwargs):
         if not shortcut:
             raise MethodNotAllowed
         metadata = kwargs.get('metadata')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
             raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
-        posted_url = kwargs.get('url')
-        if posted_url is None or not validate_url(posted_url):
-            raise generate_bad_request('missing-args', 'URL invalid or missing',
-                                       args=['url'])
         url.custom_data = metadata
         populate_from_dict(url, kwargs, ('shortcut', 'url', 'allow_reuse'))
         db.session.commit()
@@ -136,7 +123,7 @@ class URLResource(MethodResource):
 
     @authorize_request_for_url
     @use_kwargs(URLSchema)
-    def delete(self, shortcut, **kwargs):
+    def delete(self, shortcut=None, **kwargs):
         if not shortcut:
             raise MethodNotAllowed
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
@@ -149,7 +136,7 @@ class URLResource(MethodResource):
     @marshal_many_or_one(URLSchema, 'shortcut', code=200)
     @use_kwargs(URLSchema)
     @authorize_request_for_url
-    def get(self, shortcut, **kwargs):
+    def get(self, shortcut=None, **kwargs):
         if shortcut is None:
             metadata = kwargs.get('metadata')
             filters = []
@@ -188,7 +175,3 @@ def generate_bad_request(error_code, message, **kwargs):
                     'description': message}
     message_dict.update(kwargs)
     return BadRequest(message_dict)
-
-
-def validate_url(url, _re=re.compile(r'^https?://[^/:]+(:[0-9]+)?(/.*)?$')):
-    return _re.match(url) is not None

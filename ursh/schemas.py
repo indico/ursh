@@ -1,34 +1,40 @@
 import json
 
 from flask_marshmallow import Schema
-from marshmallow import fields, post_load, pre_dump
-
-from ursh.models import URL, Token
+from marshmallow import fields, pre_dump
+from werkzeug.exceptions import BadRequest
 
 
 class TokenSchema(Schema):
-    auth_token = fields.Str(required=True, load_only=True, location='headers')
-    api_key = fields.Str(required=True)
+    auth_token = fields.Str(load_only=True, location='headers')
+    api_key = fields.Str()
     name = fields.Str()
     is_admin = fields.Boolean()
     is_blocked = fields.Boolean()
     token_uses = fields.Int()
     last_access = fields.DateTime()
-    callback_url = fields.Str()
+    callback_url = fields.URL()
 
-    @post_load
-    def make(self, data):
-        return Token(**data)
+    class Meta:
+        strict = True
+
+    def handle_error(self, error, data):
+        if type(data) == dict:
+            raise BadRequest({'code': 'validation-error', 'args': error.field_names,
+                              'messages': error.messages})
 
 
 class URLSchema(Schema):
-    auth_token = fields.Str(required=True, load_only=True, location='headers')
-    shortcut = fields.Str(required=True)
-    url = fields.URL(strict=True)
+    auth_token = fields.Str(load_only=True, location='headers')
+    shortcut = fields.Str()
+    url = fields.URL()
     metadata = fields.Dict()
-    token = fields.Str(required=True, load_from='token.api_key')
+    token = fields.Str(load_from='token.api_key')
     allow_reuse = fields.Boolean(load_only=True, default=False)
     all = fields.Boolean(load_only=True, default=False)
+
+    class Meta:
+        strict = True
 
     @pre_dump
     def prepare_obj(self, data):
@@ -40,6 +46,7 @@ class URLSchema(Schema):
         }
         return data
 
-    @post_load
-    def make(self, data):
-        return URL(**data)
+    def handle_error(self, error, data):
+        if type(data) == dict:
+            raise BadRequest({'code': 'validation-error', 'args': error.field_names,
+                              'messages': error.messages})
