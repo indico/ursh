@@ -5,6 +5,7 @@ import os
 
 import yaml
 from flask import Flask
+from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
 
 from ursh import db
@@ -30,6 +31,7 @@ def create_app(config_file=None, testing=False):
     _setup_cli(app)
     _register_handlers(app)
     _register_blueprints(app)
+    _register_docs(app)
     return app
 
 
@@ -82,3 +84,8 @@ def _register_blueprints(app):
     from ursh.blueprints import api, redirection
     app.register_blueprint(api)
     app.register_blueprint(redirection)
+
+
+def _register_docs(app):
+    docs = FlaskApiSpec(app)
+    docs.register_existing_resources()
