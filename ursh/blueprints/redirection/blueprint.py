@@ -1,5 +1,7 @@
-from flask import Blueprint, redirect, Response
+from flask import Blueprint, Response, redirect
+
 from ursh.models import URL
+
 
 bp = Blueprint('redirection', __name__)
 
