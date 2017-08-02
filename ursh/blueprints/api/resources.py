@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from flask import Response, g
+from flask import Response, current_app, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
@@ -164,6 +164,9 @@ def create_new_url(data, shortcut=None):
     metadata = data.get('metadata')
     if not metadata:
         metadata = {}
+    if shortcut in current_app.config.get('BLACKLISTED_URLS'):
+        raise generate_bad_request('invalid-shortcut', 'Invalid shortcut',
+                                   args=['shortcut'])
     new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
     populate_from_dict(new_url, data, ('url', 'allow_reuse'))
     return new_url

@@ -50,3 +50,11 @@ class URLSchema(Schema):
         if type(data) == dict:
             raise BadRequest({'code': 'validation-error', 'args': error.field_names,
                               'messages': error.messages})
+
+
+def validate_shortcut(shortcut):
+    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW1234567890'
+    for letter in shortcut:
+        if letter not in alphabet:
+            return False
+    return True
