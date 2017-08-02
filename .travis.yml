@@ -1,7 +1,7 @@
 sudo: false
 language: python
-services:
-  - postgresql
+addons:
+  postgresql: 9.6
 python:
   - 3.6
 env:
@@ -15,6 +15,5 @@ script:
   - flake8 .
   - isort --check-only --diff --quiet
   - pytest
-
 notifications:
   email: false
