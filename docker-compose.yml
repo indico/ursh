@@ -1,0 +1,14 @@
+version: "2"
+services:
+  ursh:
+    build: .
+    command: ./run_ursh.sh
+    ports:
+      - "8080"
+    environment:
+      - URSH_CONFIG
+      - PGDATABASE
+      - PGHOST
+      - PGUSER
+      - PGPASSWORD
+      - PGPORT

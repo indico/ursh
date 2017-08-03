@@ -55,7 +55,8 @@ def _load_config(app, config_file):
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
-    app.config['BLACKLISTED_URLS'] = ['api', 'token', 'swagger', 'static', 'swagger-ui']
+    app.config['BLACKLISTED_URLS'] = app.config.get('BLACKLISTED_URLS', []) + \
+        ['api', 'token', 'swagger', 'static', 'swagger-ui']
 
 
 def _setup_db(app):
