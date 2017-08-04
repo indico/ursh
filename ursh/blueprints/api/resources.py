@@ -151,8 +151,7 @@ class URLResource(MethodResource):
             url = URL.query.filter_by(shortcut=shortcut).one_or_none()
             if not url:
                 raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
-            else:
-                return url
+            return url
 
 
 def populate_from_dict(obj, values, fields):
