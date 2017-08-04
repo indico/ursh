@@ -416,6 +416,22 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
                    'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
+    (
+        # url with invalid characters
+        "my-short-url*",
+        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
+        400
+    ),
+    (
+        # blacklisted URL
+        "tokens",
+        {'url': '', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut', 'url'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.'], 'url': ['Not a valid URL.']}}, 'status': 400},
+        400
+    ),
 ])
 def test_put_url(client, non_admin_auth, name, data, expected, status):
     client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=non_admin_auth)

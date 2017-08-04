@@ -1,8 +1,14 @@
 import json
 
+from flask import current_app
 from flask_marshmallow import Schema
 from marshmallow import fields, pre_dump
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, HTTPException
+from werkzeug.routing import RequestRedirect
+from werkzeug.urls import url_parse
+
+
+SHORTCUT_ALPHABET = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW1234567890-')
 
 
 class TokenSchema(Schema):
@@ -20,13 +26,13 @@ class TokenSchema(Schema):
 
     def handle_error(self, error, data):
         if type(data) == dict:
-            raise BadRequest({'code': 'validation-error', 'args': error.field_names,
+            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
                               'messages': error.messages})
 
 
 class URLSchema(Schema):
     auth_token = fields.Str(load_only=True, location='headers')
-    shortcut = fields.Str()
+    shortcut = fields.Str(validate=lambda x: validate_shortcut(x), location='view_args')
     url = fields.URL()
     metadata = fields.Dict()
     token = fields.Str(load_from='token.api_key')
@@ -48,13 +54,22 @@ class URLSchema(Schema):
 
     def handle_error(self, error, data):
         if type(data) == dict:
-            raise BadRequest({'code': 'validation-error', 'args': error.field_names,
+            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
                               'messages': error.messages})
 
 
 def validate_shortcut(shortcut):
-    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW1234567890'
-    for letter in shortcut:
-        if letter not in alphabet:
-            return False
-    return True
+    return not endpoint_for_url(shortcut) and set(shortcut) <= SHORTCUT_ALPHABET and \
+           shortcut not in current_app.config.get('BLACKLISTED_URLS')
+
+
+def endpoint_for_url(url):
+    urldata = url_parse(url)
+    adapter = current_app.url_map.bind(urldata.netloc)
+    try:
+        match = adapter.match(urldata.path)
+        return not match[0].startswith('redirection')
+    except RequestRedirect as e:
+        return endpoint_for_url(e.new_url)
+    except HTTPException:
+        return False
