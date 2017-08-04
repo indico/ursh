@@ -44,8 +44,8 @@ def postgresql():
     """
 
     # Use existing database
-    if 'URLSHORTENER_TEST_DATABASE_URI' in os.environ:
-        yield os.environ['URLSHORTENER_TEST_DATABASE_URI']
+    if 'URSH_TEST_DATABASE_URI' in os.environ:
+        yield os.environ['URSH_TEST_DATABASE_URI']
         return
 
     db_name = 'test'
