@@ -2,7 +2,6 @@ from flask import jsonify
 
 
 def handle_bad_requests(error):
-    print(error)
     return jsonify({'status': error.code, 'error': error.description}), error.code
 
 
