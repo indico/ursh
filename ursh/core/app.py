@@ -14,6 +14,16 @@ from ursh.util.db import import_all_models
 from ursh.util.nested_query_parser import NestedQueryParser
 
 
+CONFIG_OPTIONS = {
+    'SQLALCHEMY_DATABASE_URI': 'str',
+    'USE_PROXY': 'bool',
+    'SECRET_KEY': 'str',
+    'URL_LENGTH': 'int',
+    'URL_PREFIX': 'str',
+    'ENABLED_BLUEPRINTS': 'list'
+}
+
+
 def create_app(config_file=None, testing=False):
     """Factory to create the Flask application
 
@@ -50,8 +60,20 @@ def _load_config(app, config_file):
     app.config.from_pyfile('defaults.cfg')
     if config_file:
         app.config.from_pyfile(config_file)
-    else:
+    elif os.environ.get('URSH_CONFIG'):
         app.config.from_envvar('URSH_CONFIG')
+    else:
+        for key, type_ in CONFIG_OPTIONS.items():
+            prefixed_key = 'URSH_' + key
+            if prefixed_key in os.environ:
+                value = os.environ.get(prefixed_key)
+                if type_ == 'int':
+                    value = int(value)
+                elif type_ == 'list':
+                    value = [x.strip() for x in value.split(',') if x.strip()]
+                elif type_ == 'bool':
+                    value = value.lower() in ('1', 'true', 'false')
+                app.config[key] = value
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
