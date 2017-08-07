@@ -2,6 +2,7 @@ import datetime
 import logging
 import logging.config
 import os
+from ast import literal_eval
 
 import yaml
 from flask import Flask
@@ -12,6 +13,16 @@ from ursh import db
 from ursh.core.cli import createdb_command
 from ursh.util.db import import_all_models
 from ursh.util.nested_query_parser import NestedQueryParser
+
+
+CONFIG_OPTIONS = {
+    'SQLALCHEMY_DATABASE_URI',
+    'USE_PROXY',
+    'SECRET_KEY',
+    'URL_LENGTH',
+    'URL_PREFIX',
+    'ENABLED_BLUEPRINTS'
+}
 
 
 def create_app(config_file=None, testing=False):
@@ -50,8 +61,12 @@ def _load_config(app, config_file):
     app.config.from_pyfile('defaults.cfg')
     if config_file:
         app.config.from_pyfile(config_file)
-    else:
+    elif os.environ.get('URSH_CONFIG'):
         app.config.from_envvar('URSH_CONFIG')
+    else:
+        for key in CONFIG_OPTIONS:
+            if os.environ.get(key):
+                app.config[key] = literal_eval(os.environ.get(key))
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
