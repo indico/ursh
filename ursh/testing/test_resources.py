@@ -425,6 +425,14 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
         400
     ),
     (
+        # url with slash
+        "my-short-url/i-look-suspicious*",
+        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
+        400
+    ),
+    (
         # blacklisted URL
         "tokens",
         {'url': '', 'metadata.author': 'me'},

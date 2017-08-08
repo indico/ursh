@@ -1,8 +1,8 @@
+import ast
 import datetime
 import logging
 import logging.config
 import os
-from ast import literal_eval
 
 import yaml
 from flask import Flask
@@ -65,8 +65,8 @@ def _load_config(app, config_file):
         app.config.from_envvar('URSH_CONFIG')
     else:
         for key in CONFIG_OPTIONS:
-            if os.environ.get(key):
-                app.config[key] = literal_eval(os.environ.get(key))
+            if key in os.environ:
+                app.config[key] = ast.literal_eval(os.environ.get(key))
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
