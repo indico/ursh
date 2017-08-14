@@ -16,12 +16,12 @@ from ursh.util.nested_query_parser import NestedQueryParser
 
 
 CONFIG_OPTIONS = {
-    'SQLALCHEMY_DATABASE_URI',
-    'USE_PROXY',
-    'SECRET_KEY',
-    'URL_LENGTH',
-    'URL_PREFIX',
-    'ENABLED_BLUEPRINTS'
+    'SQLALCHEMY_DATABASE_URI': 'str',
+    'USE_PROXY': 'bool',
+    'SECRET_KEY': 'str',
+    'URL_LENGTH': 'int',
+    'URL_PREFIX': 'str',
+    'ENABLED_BLUEPRINTS': 'list'
 }
 
 
@@ -64,13 +64,21 @@ def _load_config(app, config_file):
     elif os.environ.get('URSH_CONFIG'):
         app.config.from_envvar('URSH_CONFIG')
     else:
-        for key in CONFIG_OPTIONS:
-            if key in os.environ:
-                app.config[key] = ast.literal_eval(os.environ.get(key))
+        for key, type in CONFIG_OPTIONS.items():
+            prefixed_key = 'URSH_' + key
+            if prefixed_key in os.environ:
+                value = os.environ.get(prefixed_key)
+                if type == 'int':
+                    value = int(value)
+                elif type == 'list':
+                    value = value.split(',')
+                elif type == 'bool':
+                    value = value.lower() in ('1', 'true', 'false')
+                app.config[key] = value
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
-    app.config['BLACKLISTED_URLS'] = app.config.get('BLACKLISTED_URLS', [])
+    app.config.setdefault('BLACKLISTED_URLS', [])
 
 
 def _setup_db(app):

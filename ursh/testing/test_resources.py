@@ -428,9 +428,8 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
         # url with slash
         "my-short-url/i-look-suspicious*",
         {'url': 'https://google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['shortcut'], 'code': 'validation-error',
-                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
-        400
+        {},
+        404
     ),
     (
         # blacklisted URL
@@ -444,8 +443,10 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
 def test_put_url(client, non_admin_auth, name, data, expected, status):
     client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
     response = client.put(f'/urls/{name}', query_string=data, headers=non_admin_auth)
-    parsed_response = json.loads(response.data)
     assert response.status_code == status
+    if status == 404:
+        return
+    parsed_response = json.loads(response.data)
     for key, value in expected.items():
         assert value == parsed_response[key]
     if status == 200:

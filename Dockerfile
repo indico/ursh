@@ -1,6 +1,6 @@
 FROM python:3.6
 
-WORKDIR /usr/src/app
+WORKDIR /opt/ursh
 
 RUN git clone https://github.com/nurav/ursh --branch docker .
 
@@ -13,8 +13,7 @@ RUN python3.6 -m venv /venv/
 
 ARG pip='/venv/bin/pip'
 
-RUN ${pip} install --upgrade pip
-RUN ${pip} install -e .
+RUN ${pip} install .
 RUN ${pip} install uwsgi
 
 EXPOSE 8080

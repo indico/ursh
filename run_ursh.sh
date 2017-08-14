@@ -1,5 +1,5 @@
 #!/bin/bash
-. /venv/bin/activate
+source /venv/bin/activate
 export SQLALCHEMY_DATABASE_URI="postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE"
 export FLASK_APP=ursh._cliapp
 psql -lqt $PGDATABASE | cut -d \| -f 1 | grep -qw $PGDATABASE
@@ -12,3 +12,4 @@ if [ $? -eq 1 ]; then
     flask createdb
 fi
 uwsgi --ini ursh.ini
+
