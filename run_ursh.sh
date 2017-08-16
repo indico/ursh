@@ -12,4 +12,3 @@ if [ $? -eq 1 ]; then
     flask createdb
 fi
 uwsgi --ini ursh.ini
-
