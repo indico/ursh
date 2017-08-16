@@ -20,4 +20,4 @@ EXPOSE 8080
 
 # OpenShift runs containers using an arbitrarily assigned user ID for security reasons
 # This user is always in the root group so it is needed to grant privileges to group 0.
-RUN chgrp -R 0 /venv /usr/src/app && chmod -R g+rwX /venv /usr/src/app
+RUN chgrp -R 0 /venv /opt/ursh && chmod -R g+rwX /venv /opt/ursh
