@@ -5,8 +5,6 @@ export FLASK_APP=ursh._cliapp
 until psql -lqt "$PGDATABASE" | cut -d '|' -f 1 | grep -qw "$PGDATABASE"; do
     sleep 1
 done
-if [ $? -eq 1 ]; then
-    echo 'Preparing DB...'
-    flask createdb
-fi
+echo 'Preparing DB...'
+flask createdb
 uwsgi --ini ursh.ini
