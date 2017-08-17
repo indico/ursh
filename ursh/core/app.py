@@ -70,14 +70,13 @@ def _load_config(app, config_file):
                 if type == 'int':
                     value = int(value)
                 elif type == 'list':
-                    value = value.split(',')
+                    value = [x.strip() for x in value.split(',') if x.strip()]
                 elif type == 'bool':
                     value = value.lower() in ('1', 'true', 'false')
                 app.config[key] = value
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
-    app.config.setdefault('BLACKLISTED_URLS', [])
 
 
 def _setup_db(app):

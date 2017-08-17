@@ -2,7 +2,7 @@ FROM python:3.6
 
 WORKDIR /opt/ursh
 
-RUN git clone https://github.com/nurav/ursh --branch docker .
+RUN git clone https://github.com/nurav/ursh .
 
 RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' >> /etc/apt/sources.list.d/postgresql.list && \
     wget --no-check-certificate -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O- | apt-key add - && \

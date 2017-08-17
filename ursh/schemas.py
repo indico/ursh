@@ -60,7 +60,7 @@ class URLSchema(Schema):
 
 def validate_shortcut(shortcut):
     return not endpoint_for_url(shortcut) and set(shortcut) <= SHORTCUT_ALPHABET and \
-           shortcut not in current_app.config.get('BLACKLISTED_URLS')
+           shortcut not in current_app.config['BLACKLISTED_URLS']
 
 
 def endpoint_for_url(url):
