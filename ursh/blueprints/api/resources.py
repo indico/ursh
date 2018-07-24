@@ -26,7 +26,7 @@ class TokenResource(MethodResource):
         return new_token, 201
 
     @admin_only
-    @marshal_with(TokenSchema(), code=200)
+    @marshal_with(TokenSchema, code=200)
     @use_kwargs(TokenSchema)
     def patch(self, api_key=None, **kwargs):
         if not api_key:
