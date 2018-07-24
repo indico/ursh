@@ -37,7 +37,7 @@ def create_app(config_file=None, testing=False):
 
 def _setup_logger(app):
     # Create our own logger since Flask's DebugLogger is a pain
-    app._logger = logging.getLogger(app.logger_name)
+    app._logger = logging.getLogger(app.logger.name)
     try:
         path = os.environ['URSH_LOGGING_CONFIG']
     except KeyError:
