@@ -105,7 +105,7 @@ def _register_handlers(app):
 
 def _register_blueprints(app):
     import ursh.blueprints
-    blueprint_names = app.config.get('ENABLED_BLUEPRINTS', {'api', 'redirection'})
+    blueprint_names = app.config['ENABLED_BLUEPRINTS']
     for name in blueprint_names:
         blueprint = getattr(ursh.blueprints, name)
         app.register_blueprint(blueprint)
