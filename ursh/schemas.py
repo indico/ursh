@@ -7,13 +7,12 @@ from werkzeug.exceptions import BadRequest, HTTPException
 from werkzeug.routing import RequestRedirect
 from werkzeug.urls import url_parse
 
-
-SHORTCUT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW1234567890-'
+from ursh.models import ALPHABET
 
 
 def validate_shortcut(shortcut):
     return (not endpoint_for_url(shortcut)
-            and set(shortcut) <= set(SHORTCUT_ALPHABET)
+            and set(shortcut) <= set(ALPHABET)
             and shortcut not in current_app.config['BLACKLISTED_URLS'])
 
 
