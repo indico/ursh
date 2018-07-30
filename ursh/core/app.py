@@ -77,6 +77,7 @@ def _load_config(app, config_file):
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
+    app.config['BLACKLISTED_URLS'] = ['api', 'token', 'swagger', 'static', 'swagger-ui']
 
 
 def _setup_db(app):
@@ -103,9 +104,11 @@ def _register_handlers(app):
 
 
 def _register_blueprints(app):
-    from ursh.blueprints import api, redirection
-    app.register_blueprint(api)
-    app.register_blueprint(redirection)
+    import ursh.blueprints
+    blueprint_names = app.config.get('ENABLED_BLUEPRINTS') or ['api', 'redirection']
+    for name in blueprint_names:
+        blueprint = getattr(ursh.blueprints, name)
+        app.register_blueprint(blueprint)
 
 
 def _register_docs(app):

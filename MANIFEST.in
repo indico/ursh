@@ -1,1 +1,1 @@
-recursive-include urlshortener *.yml *.cfg
+recursive-include ursh *.yml *.cfg
