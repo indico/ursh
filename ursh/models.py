@@ -9,6 +9,9 @@ from sqlalchemy_utc import UtcDateTime
 from ursh import db
 
 
+ALPHABET = '23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
+
+
 class Token(db.Model):
     __tablename__ = 'tokens'
 
@@ -43,10 +46,9 @@ class URL(db.Model):
 
 
 def generate_shortcut():
-    alphabet = '23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
-    shortcut_length = current_app.config.get('URL_LENGTH', 5)
+    shortcut_length = current_app.config['URL_LENGTH']
     while True:
-        candidate = ''.join(choices(alphabet, k=shortcut_length))
+        candidate = ''.join(choices(ALPHABET, k=shortcut_length))
         if (not URL.query.filter_by(shortcut=candidate).count()
                 and candidate not in current_app.config.get('BLACKLISTED_URLS')):
             return candidate

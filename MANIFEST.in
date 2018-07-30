@@ -1,1 +1,1 @@
-recursive-include ursh *.yml *.cfg
+recursive-include ursh *.yml *.cfg ursh.wsgi

@@ -93,7 +93,7 @@ class URLResource(MethodResource):
 
     @use_kwargs(URLSchema)
     @authorize_request_for_url
-    @marshal_with(URLSchema(strict=True), code=201)
+    @marshal_with(URLSchema, code=201)
     def put(self, shortcut=None, **kwargs):
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:

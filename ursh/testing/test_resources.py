@@ -409,6 +409,30 @@ def test_create_url(db, app, client, data, expected, status):
                    'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
+    (
+        # url with invalid characters
+        "my-short-url*",
+        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
+        400
+    ),
+    (
+        # url with slash
+        "my-short-url/i-look-suspicious*",
+        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
+        400
+    ),
+    (
+        # blacklisted URL
+        "tokens",
+        {'url': '', 'metadata.author': 'me'},
+        {'error': {'args': ['shortcut', 'url'], 'code': 'validation-error',
+                   'messages': {'shortcut': ['Invalid value.'], 'url': ['Not a valid URL.']}}, 'status': 400},
+        400
+    ),
 ])
 def test_put_url(db, client, name, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)

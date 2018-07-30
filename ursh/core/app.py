@@ -20,7 +20,8 @@ CONFIG_OPTIONS = {
     'SECRET_KEY': 'str',
     'URL_LENGTH': 'int',
     'URL_PREFIX': 'str',
-    'ENABLED_BLUEPRINTS': 'list'
+    'ENABLED_BLUEPRINTS': 'list',
+    'BLACKLISTED_URLS': 'set'
 }
 
 
@@ -77,7 +78,6 @@ def _load_config(app, config_file):
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
-    app.config['BLACKLISTED_URLS'] = ['api', 'token', 'swagger', 'static', 'swagger-ui']
 
 
 def _setup_db(app):
@@ -105,7 +105,7 @@ def _register_handlers(app):
 
 def _register_blueprints(app):
     import ursh.blueprints
-    blueprint_names = app.config.get('ENABLED_BLUEPRINTS') or ['api', 'redirection']
+    blueprint_names = app.config.get('ENABLED_BLUEPRINTS', {'api', 'redirection'})
     for name in blueprint_names:
         blueprint = getattr(ursh.blueprints, name)
         app.register_blueprint(blueprint)
