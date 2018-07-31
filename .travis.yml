@@ -1,7 +1,13 @@
 sudo: false
 language: python
 addons:
-  postgresql: 9.6
+  postgresql: 10.4
+  apt:
+    packages:
+    - postgresql-10
+    - postgresql-client-10
+    - postgresql-server-dev-10
+    - postgresql-contrib
 python:
   - 3.6
 env:
@@ -14,6 +20,6 @@ install:
 script:
   - flake8 .
   - isort --check-only --diff --quiet
-  - pytest
+  - pytest -rs -v
 notifications:
   email: false
