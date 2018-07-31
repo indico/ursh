@@ -16,12 +16,6 @@ def validate_shortcut(shortcut):
             and shortcut not in current_app.config['BLACKLISTED_URLS'])
 
 
-def handle_schema_error(error, data):
-    if type(data) == dict:
-        raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
-                          'messages': error.messages})
-
-
 class TokenSchema(Schema):
     auth_token = fields.Str(load_only=True, location='headers')
     api_key = fields.Str()
@@ -35,6 +29,11 @@ class TokenSchema(Schema):
     class Meta:
         strict = True
 
+    def handle_error(self, error, data):
+        if type(data) == dict:
+            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
+                              'messages': error.messages})
+
 
 class URLSchema(Schema):
     auth_token = fields.Str(load_only=True, location='headers')
@@ -47,6 +46,11 @@ class URLSchema(Schema):
 
     class Meta:
         strict = True
+
+    def handle_error(self, error, data):
+        if type(data) == dict:
+            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
+                              'messages': error.messages})
 
     @pre_dump
     def prepare_obj(self, data):
