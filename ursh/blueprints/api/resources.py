@@ -93,7 +93,7 @@ class URLResource(MethodResource):
 
     @use_kwargs(URLSchema)
     @authorize_request_for_url
-    @marshal_with(URLSchema, code=201)
+    @marshal_with(URLSchema(strict=True), code=201)
     def put(self, shortcut=None, **kwargs):
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
@@ -164,9 +164,8 @@ def create_new_url(data, shortcut=None):
     metadata = data.get('metadata')
     if not metadata:
         metadata = {}
-    if shortcut in current_app.config.get('BLACKLISTED_URLS'):
-        raise generate_bad_request('invalid-shortcut', 'Invalid shortcut',
-                                   args=['shortcut'])
+    if shortcut in current_app.config['BLACKLISTED_URLS']:
+        raise generate_bad_request('invalid-shortcut', 'Invalid shortcut', args=['shortcut'])
     new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
     populate_from_dict(new_url, data, ('url', 'allow_reuse'))
     return new_url
