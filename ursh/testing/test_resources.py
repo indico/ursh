@@ -3,7 +3,11 @@ from uuid import uuid4
 
 import pytest
 
+import ursh
 from ursh.models import URL, Token
+
+
+ursh.models.ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-'
 
 
 @pytest.fixture
