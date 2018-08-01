@@ -1,4 +1,3 @@
-import json
 from uuid import uuid4
 
 import pytest
@@ -93,7 +92,7 @@ def test_create_token(client, admin_auth, non_admin_auth, admin, data, expected,
     if admin:
         auth = admin_auth
     response = client.post('/tokens/', data=data, headers=auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
 
     assert response.status_code == status_code
     for key, value in expected.items():
@@ -111,7 +110,7 @@ def test_create_token_name_exists(client, admin_auth):
     expected = {'error': {'args': ['name'], 'code': 'conflict', 'description': 'Token with name exists'}, 'status': 409}
 
     assert response.status_code == 409
-    assert json.loads(response.data) == expected
+    assert response.get_json() == expected
 
 
 @pytest.mark.parametrize("admin,url,data,expected,status", [
@@ -184,7 +183,7 @@ def test_get_tokens(client, admin_auth, non_admin_auth, admin, url, data, expect
                                   'is_admin': False, 'is_blocked': True}, headers=auth)
     client.post('/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
 
     assert response.status_code == status
     if type(expected) == list:
@@ -262,7 +261,7 @@ def test_token_patch(client, admin_auth, non_admin_auth, admin, name, data, expe
     token = Token.query.filter_by(name=name).one_or_none()
     uuid = token.api_key if token else name  # assume we want to use the name as an API key if it is not present
     response = client.patch(f'/tokens/{uuid}', query_string=data, headers=auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -293,7 +292,7 @@ def test_token_delete(client, admin_auth, non_admin_auth, admin, expected, statu
     if status == 204:
         assert response.data == b''
     else:
-        assert json.loads(response.data) == expected
+        assert response.get_json() == expected
 
 
 @pytest.mark.parametrize("method,url,data", [
@@ -319,7 +318,7 @@ def test_blocked_or_unauthorized(client, blocked_auth, method, url, data, blocke
                 'status': 401}
 
     assert response.status_code == 401
-    assert json.loads(response.data) == expected
+    assert response.get_json() == expected
 
 
 # URL Tests
@@ -363,11 +362,11 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
     existing_shortcut = ''
     if data.get('allow_reuse'):
         existing = client.post('/urls/', query_string={'url': 'http://existing.com'}, headers=non_admin_auth)
-        existing = json.loads(existing.data)
+        existing = existing.get_json()
         existing_shortcut = existing.get('shortcut')
         assert existing_shortcut is not None
     response = client.post('/urls/', query_string=data, headers=non_admin_auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
     for key, value in expected.items():
         assert value == parsed_response[key]
     if status == 201:
@@ -424,7 +423,7 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
 def test_put_url(client, non_admin_auth, name, data, expected, status):
     client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
     response = client.put(f'/urls/{name}', query_string=data, headers=non_admin_auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -471,7 +470,7 @@ def test_patch_url(client, non_admin_auth, non_admin_auth_1, shortcut, data, exp
     client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
     client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
     response = client.patch(f'/urls/{shortcut}', query_string=data, headers=non_admin_auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -508,7 +507,7 @@ def test_delete_url(client, non_admin_auth, shortcut, expected, status):
         assert url is None
         assert response.data == b''
     else:
-        parsed_response = json.loads(response.data)
+        parsed_response = response.get_json()
         for key, value in expected.items():
             assert value == parsed_response[key]
 
@@ -567,7 +566,7 @@ def test_get_url(client, non_admin_auth, url, data, expected, status):
                headers=non_admin_auth)
     client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=non_admin_auth)
     response = client.get(url, query_string=data, headers=non_admin_auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
 
     assert response.status_code == status
     if type(expected) == list:
@@ -593,7 +592,7 @@ def test_get_admin_all(client, admin_auth, non_admin_auth, non_admin_auth_1):
                headers=non_admin_auth_1)
     client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
     response = client.get('/urls/', query_string={'all': True}, headers=admin_auth)
-    parsed_response = json.loads(response.data)
+    parsed_response = response.get_json()
     expected = [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
                 {'metadata': '{"a": "b", "owner": "all"}', 'shortcut': 'def', 'url': 'http://example.com'},
                 {'metadata': '{"author": "me"}', 'shortcut': 'ghi', 'url': 'http://cern.ch'}]
@@ -616,4 +615,4 @@ def test_other_user(client, non_admin_auth, non_admin_auth_1, method):
                           'description': 'You are not allowed to make this request'},
                 'status': 403}
     assert response.status_code == 403
-    assert json.loads(response.data) == expected
+    assert response.get_json() == expected
