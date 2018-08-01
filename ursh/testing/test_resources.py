@@ -421,9 +421,8 @@ def test_create_url(db, app, client, data, expected, status):
         # url with slash
         "my-short-url/i-look-suspicious*",
         {'url': 'https://google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['shortcut'], 'code': 'validation-error',
-                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
-        400
+        {},
+        404
     ),
     (
         # blacklisted URL
