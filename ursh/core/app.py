@@ -4,7 +4,7 @@ import logging.config
 import os
 
 import yaml
-from flask import Flask
+from flask import Flask, request
 from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
 
@@ -73,7 +73,7 @@ def _load_config(app, config_file):
                 elif type_ == 'list':
                     value = [x.strip() for x in value.split(',') if x.strip()]
                 elif type_ == 'bool':
-                    value = value.lower() in ('1', 'true', 'false')
+                    value = value.lower() in ('1', 'true')
                 app.config[key] = value
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app)

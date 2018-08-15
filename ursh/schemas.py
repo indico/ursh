@@ -1,6 +1,7 @@
 import json
+import posixpath
 
-from flask import current_app
+from flask import current_app, request
 from flask_marshmallow import Schema
 from marshmallow import fields, pre_dump
 from werkzeug.exceptions import BadRequest, HTTPException
@@ -38,7 +39,9 @@ class TokenSchema(Schema):
 class URLSchema(Schema):
     auth_token = fields.Str(load_only=True, location='headers')
     shortcut = fields.Str(validate=validate_shortcut, location='view_args')
+    host = fields.URL()
     url = fields.URL()
+    short_url = fields.URL()
     metadata = fields.Dict()
     token = fields.Str(load_from='token.api_key')
     allow_reuse = fields.Boolean(load_only=True, default=False)
@@ -56,7 +59,7 @@ class URLSchema(Schema):
     def prepare_obj(self, data):
         data = {
             'url': data.url,
-            'shortcut': data.shortcut,
+            'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
             'metadata': json.dumps(data.custom_data),
             'token': data.token.api_key,
         }
