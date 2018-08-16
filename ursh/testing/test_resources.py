@@ -9,26 +9,6 @@ from ursh.models import URL, Token
 ursh.models.ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-'
 
 
-@pytest.fixture
-def admin_auth(db):
-    return make_auth(db, 'admin', is_admin=True, is_blocked=False)
-
-
-@pytest.fixture
-def non_admin_auth(db):
-    return make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
-
-
-@pytest.fixture
-def non_admin_auth_1(db):
-    return make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
-
-
-@pytest.fixture
-def blocked_auth(db):
-    return make_auth(db, 'blocked', is_admin=True, is_blocked=True)
-
-
 def make_auth(db, name, is_admin=False, is_blocked=False):
     user = create_user(db, name, is_admin, is_blocked)
     return {'Authorization': f'Bearer {user.api_key}'}
@@ -45,7 +25,6 @@ def create_user(db, name, is_admin=False, is_blocked=False):
 
 
 # Token tests
-
 
 @pytest.mark.parametrize("admin,data,expected,status_code", [
     (
@@ -87,10 +66,11 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         403
     )
 ])
-def test_create_token(client, admin_auth, non_admin_auth, admin, data, expected, status_code):
-    auth = non_admin_auth
+def test_create_token(db, client, admin, data, expected, status_code):
     if admin:
-        auth = admin_auth
+        auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    else:
+        auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
     response = client.post('/tokens/', data=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -104,9 +84,10 @@ def test_create_token(client, admin_auth, non_admin_auth, admin, data, expected,
         assert parsed_response.get('last_access') is not None
 
 
-def test_create_token_name_exists(client, admin_auth):
-    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
-    response = client.post('/tokens/', data={'name': 'abc'}, headers=admin_auth)
+def test_create_token_name_exists(db, client):
+    auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    response = client.post('/tokens/', data={'name': 'abc'}, headers=auth)
     expected = {'error': {'args': ['name'], 'code': 'conflict', 'description': 'Token with name exists'}, 'status': 409}
 
     assert response.status_code == 409
@@ -172,10 +153,12 @@ def test_create_token_name_exists(client, admin_auth):
         200
     )
 ])
-def test_get_tokens(client, admin_auth, non_admin_auth, admin, url, data, expected, status):
-    auth = non_admin_auth
+def test_get_tokens(db, client, admin, url, data, expected, status):
     if admin:
-        auth = admin_auth
+        auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    else:
+        auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
     client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
     client.post('/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
                                   'is_admin': True, 'is_blocked': True}, headers=auth)
@@ -248,10 +231,12 @@ def test_get_tokens(client, admin_auth, non_admin_auth, admin, url, data, expect
         403
     )
 ])
-def test_token_patch(client, admin_auth, non_admin_auth, admin, name, data, expected, status):
-    auth = non_admin_auth
+def test_token_patch(db, client, admin, name, data, expected, status):
     if admin:
-        auth = admin_auth
+        auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    else:
+        auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
     client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
     client.post('/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
                                   'is_admin': True, 'is_blocked': True}, headers=auth)
@@ -262,6 +247,7 @@ def test_token_patch(client, admin_auth, non_admin_auth, admin, name, data, expe
     uuid = token.api_key if token else name  # assume we want to use the name as an API key if it is not present
     response = client.patch(f'/tokens/{uuid}', query_string=data, headers=auth)
     parsed_response = response.get_json()
+
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -280,10 +266,13 @@ def test_token_patch(client, admin_auth, non_admin_auth, admin, name, data, expe
     (False, {"error": {"code": "insufficient-permissions",
                        "description": "You are not allowed to make this request"}, "status": 403}, 403)
 ])
-def test_token_delete(client, admin_auth, non_admin_auth, admin, expected, status):
-    auth = non_admin_auth
+def test_token_delete(db, client, admin, expected, status):
     if admin:
-        auth = admin_auth
+        auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    else:
+        auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+    admin_auth = make_auth(db, 'admin_', is_admin=True, is_blocked=False)
+
     client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
     api_key = Token.query.filter_by(name='abc').one_or_none().api_key
     response = client.delete(f'/tokens/{api_key}', headers=auth)
@@ -307,10 +296,9 @@ def test_token_delete(client, admin_auth, non_admin_auth, admin, expected, statu
     ('put', '/urls/abc', {})
 ])
 @pytest.mark.parametrize("blocked", [True, False])
-def test_blocked_or_unauthorized(client, blocked_auth, method, url, data, blocked):
-    headers = None
-    if blocked:
-        headers = blocked_auth
+def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
+    headers = make_auth(db, 'blocked', is_admin=True, is_blocked=True) if blocked else None
+
     method = getattr(client, method)
     response = method(url, query_string=data, headers=headers)
     expected = {'error': {'code': 'invalid-token',
@@ -322,7 +310,6 @@ def test_blocked_or_unauthorized(client, blocked_auth, method, url, data, blocke
 
 
 # URL Tests
-
 
 @pytest.mark.parametrize("data,expected,status", [
     (
@@ -358,15 +345,18 @@ def test_blocked_or_unauthorized(client, blocked_auth, method, url, data, blocke
         400
     )
 ])
-def test_create_url(app, client, non_admin_auth, data, expected, status):
+def test_create_url(db, app, client, data, expected, status):
+    auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
     existing_shortcut = ''
     if data.get('allow_reuse'):
-        existing = client.post('/urls/', query_string={'url': 'http://existing.com'}, headers=non_admin_auth)
+        existing = client.post('/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
         existing = existing.get_json()
         existing_shortcut = existing.get('shortcut')
         assert existing_shortcut is not None
-    response = client.post('/urls/', query_string=data, headers=non_admin_auth)
+    response = client.post('/urls/', query_string=data, headers=auth)
     parsed_response = response.get_json()
+
     for key, value in expected.items():
         assert value == parsed_response[key]
     if status == 201:
@@ -420,10 +410,13 @@ def test_create_url(app, client, non_admin_auth, data, expected, status):
         400
     ),
 ])
-def test_put_url(client, non_admin_auth, name, data, expected, status):
-    client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
-    response = client.put(f'/urls/{name}', query_string=data, headers=non_admin_auth)
+def test_put_url(db, client, name, data, expected, status):
+    auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
+    client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=auth)
+    response = client.put(f'/urls/{name}', query_string=data, headers=auth)
     parsed_response = response.get_json()
+
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -466,11 +459,15 @@ def test_put_url(client, non_admin_auth, name, data, expected, status):
         400
     ),
 ])
-def test_patch_url(client, non_admin_auth, non_admin_auth_1, shortcut, data, expected, status):
-    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
-    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
-    response = client.patch(f'/urls/{shortcut}', query_string=data, headers=non_admin_auth)
+def test_patch_url(db, client, shortcut, data, expected, status):
+    auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
+    auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
+
+    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=auth1)
+    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=auth2)
+    response = client.patch(f'/urls/{shortcut}', query_string=data, headers=auth1)
     parsed_response = response.get_json()
+
     assert response.status_code == status
     for key, value in expected.items():
         assert value == parsed_response[key]
@@ -497,10 +494,13 @@ def test_patch_url(client, non_admin_auth, non_admin_auth_1, shortcut, data, exp
         404
     ),
 ])
-def test_delete_url(client, non_admin_auth, shortcut, expected, status):
-    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
-    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=non_admin_auth)
-    response = client.delete(f'/urls/{shortcut}', headers=non_admin_auth)
+def test_delete_url(db, client, shortcut, expected, status):
+    auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
+    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=auth)
+    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=auth)
+    response = client.delete(f'/urls/{shortcut}', headers=auth)
+
     assert response.status_code == status
     if status == 204:
         url = URL.query.filter_by(shortcut='abc').one_or_none()
@@ -560,12 +560,14 @@ def test_delete_url(client, non_admin_auth, shortcut, expected, status):
         404
     )
 ])
-def test_get_url(client, non_admin_auth, url, data, expected, status):
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=non_admin_auth)
+def test_get_url(db, client, url, data, expected, status):
+    auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
+
+    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=auth)
     client.put('/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
-               headers=non_admin_auth)
-    client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=non_admin_auth)
-    response = client.get(url, query_string=data, headers=non_admin_auth)
+               headers=auth)
+    client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=auth)
+    response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -586,16 +588,22 @@ def test_get_url(client, non_admin_auth, url, data, expected, status):
             assert parsed_response.get('url') is not None
 
 
-def test_get_admin_all(client, admin_auth, non_admin_auth, non_admin_auth_1):
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=non_admin_auth)
+def test_get_admin_all(db, client):
+    admin_auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
+    non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
+    non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
+
+    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+               headers=non_admin_auth1)
     client.put('/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
-               headers=non_admin_auth_1)
+               headers=non_admin_auth2)
     client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
     response = client.get('/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
     expected = [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
                 {'metadata': '{"a": "b", "owner": "all"}', 'shortcut': 'def', 'url': 'http://example.com'},
                 {'metadata': '{"author": "me"}', 'shortcut': 'ghi', 'url': 'http://cern.ch'}]
+
     assert response.status_code == 200
     parsed_response = sorted(parsed_response, key=lambda k: k['url'])
     expected = sorted(expected, key=lambda k: k['url'])
@@ -607,12 +615,17 @@ def test_get_admin_all(client, admin_auth, non_admin_auth, non_admin_auth_1):
 
 
 @pytest.mark.parametrize("method", ['patch', 'delete'])
-def test_other_user(client, non_admin_auth, non_admin_auth_1, method):
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=non_admin_auth)
+def test_other_user(db, client, method):
+    non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
+    non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
+
+    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+               headers=non_admin_auth1)
     method = getattr(client, method)
-    response = method('/urls/abc', query_string={}, headers=non_admin_auth_1)
+    response = method('/urls/abc', query_string={}, headers=non_admin_auth2)
     expected = {'error': {'code': 'insufficient-permissions',
                           'description': 'You are not allowed to make this request'},
                 'status': 403}
+
     assert response.status_code == 403
     assert response.get_json() == expected
