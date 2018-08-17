@@ -1,6 +1,8 @@
+import posixpath
 from uuid import uuid4
 
 import pytest
+from werkzeug.urls import url_parse
 
 import ursh
 from ursh.models import URL, Token
@@ -352,8 +354,8 @@ def test_create_url(db, app, client, data, expected, status):
     if data.get('allow_reuse'):
         existing = client.post('/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
         existing = existing.get_json()
-        existing_shortcut = existing.get('shortcut')
-        assert existing_shortcut is not None
+        existing_short_url = existing.get('short_url')
+        assert existing_short_url is not None
     response = client.post('/urls/', query_string=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -362,9 +364,10 @@ def test_create_url(db, app, client, data, expected, status):
     if status == 201:
         if data.get('allow_reuse'):
             assert data.get('shortcut') == existing_shortcut
-        assert parsed_response.get('shortcut') is not None
+        assert parsed_response.get('short_url') is not None
         assert parsed_response.get('token') is not None
-        url = URL.query.filter_by(shortcut=parsed_response['shortcut']).one_or_none()
+        shortcut = url_parse(parsed_response['short_url']).path.lstrip('/')
+        url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
         assert url.url == data['url']
         assert len(url.shortcut) == app.config.get('URL_LENGTH')
@@ -376,7 +379,8 @@ def test_create_url(db, app, client, data, expected, status):
         # everything goes right
         "my-short-url",
         {'url': 'http://google.com', 'metadata.author': 'me'},
-        {'metadata': '{"author": "me"}', 'shortcut': 'my-short-url', 'url': 'http://google.com'},
+        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
+         'url': 'http://google.com'},
         201
     ),
     (
@@ -390,7 +394,8 @@ def test_create_url(db, app, client, data, expected, status):
         # allow_reuse = true
         "i-exist",
         {'url': 'http://cern.ch', 'metadata.author': 'me', 'allow_reuse': True},
-        {'metadata': '{}', 'shortcut': 'i-exist', 'url': 'http://example.com'},
+        {'metadata': '{}', 'short_url': posixpath.join('http://localhost:5000/', 'i-exist'),
+         'url': 'http://example.com'},
         201
     ),
     (
@@ -444,7 +449,7 @@ def test_put_url(db, client, name, data, expected, status):
     for key, value in expected.items():
         assert value == parsed_response[key]
     if status == 200:
-        assert parsed_response.get('shortcut') is not None
+        assert parsed_response.get('short_url') is not None
         assert parsed_response.get('token') is not None
         url = URL.query.filter_by(shortcut=name)
         assert url is not None
@@ -455,7 +460,8 @@ def test_put_url(db, client, name, data, expected, status):
         # everything goes right
         "abc",
         {'metadata.author': 'me', 'url': 'http://example.com'},
-        {'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
+        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+         'url': 'http://example.com'},
         200
     ),
     (
@@ -497,7 +503,7 @@ def test_patch_url(db, client, shortcut, data, expected, status):
     if status == 200:
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
-        assert parsed_response.get('shortcut') is not None
+        assert parsed_response.get('short_url') is not None
         assert parsed_response.get('token') is not None
         assert url.url == data.get('url')
         assert url.token.api_key == parsed_response.get('token')
@@ -540,39 +546,48 @@ def test_delete_url(db, client, shortcut, expected, status):
         # everything goes right
         '/urls/',
         {},
-        [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
-         {'metadata': '{"a": "b", "owner": "all"}', 'shortcut': 'def', 'url': 'http://example.com'},
-         {'metadata': '{"author": "me"}', 'shortcut': 'ghi', 'url': 'http://cern.ch'}],
+        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+          'url': 'http://example.com'},
+         {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+          'url': 'http://example.com'},
+         {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+          'url': 'http://cern.ch'}],
         200
     ),
     (
         # everything goes right, asking for specific shortcut
         '/urls/abc',
         {},
-        {'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
+        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+         'url': 'http://example.com'},
         200
     ),
     (
         # filter based on url
         '/urls/',
         {'url': 'http://example.com'},
-        [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
-         {'metadata': '{"a": "b", "owner": "all"}', 'shortcut': 'def', 'url': 'http://example.com'}],
+        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+          'url': 'http://example.com'},
+         {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+          'url': 'http://example.com'}],
         200
     ),
     (
         # filter based on metadata fields
         '/urls/',
         {'metadata.author': 'me'},
-        [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
-         {'metadata': '{"author": "me"}', 'shortcut': 'ghi', 'url': 'http://cern.ch'}],
+        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+          'url': 'http://example.com'},
+         {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+          'url': 'http://cern.ch'}],
         200
     ),
     (
         # filter based on both url and metadata fields
         '/urls/',
         {'url': 'http://example.com', 'metadata.author': 'me'},
-        [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'}],
+        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+          'url': 'http://example.com'}],
         200
     ),
     (
@@ -595,8 +610,8 @@ def test_get_url(db, client, url, data, expected, status):
 
     assert response.status_code == status
     if type(expected) == list:
-        parsed_response = sorted(parsed_response, key=lambda k: k['shortcut'])
-        expected = sorted(expected, key=lambda k: k['shortcut'])
+        parsed_response = sorted(parsed_response, key=lambda k: k['short_url'])
+        expected = sorted(expected, key=lambda k: k['short_url'])
         for expected_token, returned_token in zip(expected, parsed_response):
             for key, value in expected_token.items():
                 assert value == returned_token[key]
@@ -623,9 +638,12 @@ def test_get_admin_all(db, client):
     client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
     response = client.get('/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
-    expected = [{'metadata': '{"author": "me"}', 'shortcut': 'abc', 'url': 'http://example.com'},
-                {'metadata': '{"a": "b", "owner": "all"}', 'shortcut': 'def', 'url': 'http://example.com'},
-                {'metadata': '{"author": "me"}', 'shortcut': 'ghi', 'url': 'http://cern.ch'}]
+    expected = [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+                 'url': 'http://example.com'},
+                {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+                 'url': 'http://example.com'},
+                {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+                 'url': 'http://cern.ch'}]
 
     assert response.status_code == 200
     parsed_response = sorted(parsed_response, key=lambda k: k['url'])
