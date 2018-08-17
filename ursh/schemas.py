@@ -28,6 +28,8 @@ class SchemaBase(Schema):
 
 
 class TokenSchema(SchemaBase):
+    """Schema class to validate tokens."""
+
     auth_token = fields.Str(load_only=True, location='headers')
     api_key = fields.Str()
     name = fields.Str()
@@ -39,6 +41,11 @@ class TokenSchema(SchemaBase):
 
 
 class URLSchema(SchemaBase):
+    """Schema class to validate URLs.
+
+    Note: use one of the sub-classes below for validation, depending on the shortcut requirements.
+    """
+
     auth_token = fields.Str(load_only=True, location='headers')
     shortcut = fields.Str(location='view_args')
     host = fields.URL()
@@ -61,6 +68,8 @@ class URLSchema(SchemaBase):
 
 
 class URLSchemaManual(URLSchema):
+    """Validator for user-specified shortcuts (i.e. all requests except POST)."""
+
     @validates('shortcut')
     def validate_shortcut(self, data):
         if not validate_shortcut(data, restricted=False):
@@ -68,6 +77,8 @@ class URLSchemaManual(URLSchema):
 
 
 class URLSchemaRestricted(URLSchema):
+    """Validator for auto-generated shortcuts (i.e. POST requests)."""
+
     @validates('shortcut')
     def validate_shortcut(self, data):
         if not validate_shortcut(data, restricted=True):
