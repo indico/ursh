@@ -3,21 +3,33 @@ import posixpath
 
 from flask import current_app
 from flask_marshmallow import Schema
-from marshmallow import fields, pre_dump
+from marshmallow import ValidationError, fields, pre_dump, validates
 from werkzeug.exceptions import BadRequest, HTTPException
 from werkzeug.routing import RequestRedirect
 from werkzeug.urls import url_parse
 
-from ursh.models import ALPHABET
+from ursh.models import ALPHABET_MANUAL, ALPHABET_RESTRICTED
 
 
-def validate_shortcut(shortcut):
+def validate_shortcut(shortcut, restricted):
+    alphabet = ALPHABET_RESTRICTED if restricted else ALPHABET_MANUAL
     return (not endpoint_for_url(shortcut)
-            and set(shortcut) <= set(ALPHABET)
+            and set(shortcut) <= set(alphabet)
             and shortcut not in current_app.config['BLACKLISTED_URLS'])
 
 
-class TokenSchema(Schema):
+class SchemaBase(Schema):
+    class Meta:
+        strict = True
+
+    @staticmethod
+    def handle_error(error, data):
+        if type(data) == dict:
+            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
+                              'messages': error.messages})
+
+
+class TokenSchema(SchemaBase):
     auth_token = fields.Str(load_only=True, location='headers')
     api_key = fields.Str()
     name = fields.Str()
@@ -27,18 +39,10 @@ class TokenSchema(Schema):
     last_access = fields.DateTime()
     callback_url = fields.URL()
 
-    class Meta:
-        strict = True
 
-    def handle_error(self, error, data):
-        if type(data) == dict:
-            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
-                              'messages': error.messages})
-
-
-class URLSchema(Schema):
+class URLSchema(SchemaBase):
     auth_token = fields.Str(load_only=True, location='headers')
-    shortcut = fields.Str(validate=validate_shortcut, location='view_args')
+    shortcut = fields.Str(location='view_args')
     host = fields.URL()
     url = fields.URL()
     short_url = fields.URL()
@@ -46,14 +50,6 @@ class URLSchema(Schema):
     token = fields.Str(load_from='token.api_key')
     allow_reuse = fields.Boolean(load_only=True, default=False)
     all = fields.Boolean(load_only=True, default=False)
-
-    class Meta:
-        strict = True
-
-    def handle_error(self, error, data):
-        if type(data) == dict:
-            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
-                              'messages': error.messages})
 
     @pre_dump
     def prepare_obj(self, data):
@@ -64,6 +60,20 @@ class URLSchema(Schema):
             'token': data.token.api_key,
         }
         return data
+
+
+class URLSchemaManual(URLSchema):
+    @validates('shortcut')
+    def validate_shortcut(self, data):
+        if not validate_shortcut(data, restricted=False):
+            raise ValidationError('Invalid value.')
+
+
+class URLSchemaRestricted(URLSchema):
+    @validates('shortcut')
+    def validate_shortcut(self, data):
+        if not validate_shortcut(data, restricted=True):
+            raise ValidationError('Invalid value.')
 
 
 def endpoint_for_url(url):

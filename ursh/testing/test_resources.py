@@ -4,11 +4,7 @@ from uuid import uuid4
 import pytest
 from werkzeug.urls import url_parse
 
-import ursh
 from ursh.models import URL, Token
-
-
-ursh.models.ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-'
 
 
 def make_auth(db, name, is_admin=False, is_blocked=False):

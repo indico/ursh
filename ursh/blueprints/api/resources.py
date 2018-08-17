@@ -6,7 +6,7 @@ from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from ursh import db
 from ursh.models import URL, Token
-from ursh.schemas import TokenSchema, URLSchema
+from ursh.schemas import TokenSchema, URLSchemaManual, URLSchemaRestricted
 from ursh.util.decorators import admin_only, authorize_request_for_url, marshal_many_or_one
 
 
@@ -76,8 +76,8 @@ class TokenResource(MethodResource):
 
 
 class URLResource(MethodResource):
-    @marshal_with(URLSchema(strict=True), code=201)
-    @use_kwargs(URLSchema)
+    @marshal_with(URLSchemaRestricted(strict=True), code=201)
+    @use_kwargs(URLSchemaRestricted)
     def post(self, **kwargs):
         if not kwargs.get('url'):
             raise generate_bad_request('missing-args', 'URL missing', args=['url'])
@@ -91,9 +91,9 @@ class URLResource(MethodResource):
 
         return new_url, 201
 
-    @use_kwargs(URLSchema)
+    @use_kwargs(URLSchemaManual)
     @authorize_request_for_url
-    @marshal_with(URLSchema(strict=True), code=201)
+    @marshal_with(URLSchemaManual(strict=True), code=201)
     def put(self, shortcut=None, **kwargs):
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
@@ -106,9 +106,9 @@ class URLResource(MethodResource):
         db.session.commit()
         return new_url, 201
 
-    @use_kwargs(URLSchema)
+    @use_kwargs(URLSchemaManual)
     @authorize_request_for_url
-    @marshal_with(URLSchema)
+    @marshal_with(URLSchemaManual)
     def patch(self, shortcut=None, **kwargs):
         if not shortcut:
             raise MethodNotAllowed
@@ -122,7 +122,7 @@ class URLResource(MethodResource):
         return url
 
     @authorize_request_for_url
-    @use_kwargs(URLSchema)
+    @use_kwargs(URLSchemaManual)
     def delete(self, shortcut=None, **kwargs):
         if not shortcut:
             raise MethodNotAllowed
@@ -133,8 +133,8 @@ class URLResource(MethodResource):
         db.session.commit()
         return Response(status=204)
 
-    @marshal_many_or_one(URLSchema, 'shortcut', code=200)
-    @use_kwargs(URLSchema)
+    @marshal_many_or_one(URLSchemaManual, 'shortcut', code=200)
+    @use_kwargs(URLSchemaManual)
     @authorize_request_for_url
     def get(self, shortcut=None, **kwargs):
         if shortcut is None:
