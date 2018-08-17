@@ -4,7 +4,7 @@ import logging.config
 import os
 
 import yaml
-from flask import Flask, request
+from flask import Flask
 from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
 

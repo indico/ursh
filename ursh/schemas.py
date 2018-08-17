@@ -1,7 +1,7 @@
 import json
 import posixpath
 
-from flask import current_app, request
+from flask import current_app
 from flask_marshmallow import Schema
 from marshmallow import fields, pre_dump
 from werkzeug.exceptions import BadRequest, HTTPException
