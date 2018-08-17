@@ -24,9 +24,7 @@ class SchemaBase(Schema):
 
     @staticmethod
     def handle_error(error, data):
-        if type(data) == dict:
-            raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names),
-                              'messages': error.messages})
+        raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names), 'messages': error.messages})
 
 
 class TokenSchema(SchemaBase):
