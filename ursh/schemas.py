@@ -29,15 +29,13 @@ class SchemaBase(Schema):
 
 class TokenSchema(SchemaBase):
     """Schema class to validate tokens."""
-
-    auth_token = fields.Str(load_only=True, location='headers')
-    api_key = fields.Str()
-    name = fields.Str()
-    is_admin = fields.Boolean()
-    is_blocked = fields.Boolean()
-    token_uses = fields.Int()
-    last_access = fields.DateTime()
-    callback_url = fields.URL()
+    api_key = fields.Str(description='The token API key - uniquely identifies the token')
+    name = fields.Str(description='The token name')
+    is_admin = fields.Boolean(description='Is this an admin token?')
+    is_blocked = fields.Boolean(description='Is this token blocked?')
+    token_uses = fields.Int(description='How many times has this token been used?')
+    last_access = fields.DateTime(description='Last time this token was used')
+    callback_url = fields.URL(description='A request will be made to this URL every time the token is used')
 
 
 class URLSchema(SchemaBase):
@@ -45,16 +43,12 @@ class URLSchema(SchemaBase):
 
     Note: use one of the sub-classes below for validation, depending on the shortcut requirements.
     """
-
-    auth_token = fields.Str(load_only=True, location='headers')
-    shortcut = fields.Str(location='view_args')
-    host = fields.URL()
-    url = fields.URL()
-    short_url = fields.URL()
-    metadata = fields.Dict()
-    token = fields.Str(load_from='token.api_key')
+    shortcut = fields.Str(location='view_args', description='The generated or manually set URL shortcut')
+    url = fields.URL(description='The original URL (the short URL target)')
+    short_url = fields.URL(description='The short URL')
+    metadata = fields.Dict(description='Additional metadata (provided upon short URL creation)')
+    token = fields.Str(load_from='token.api_key', description='The token than created the short URL')
     allow_reuse = fields.Boolean(load_only=True, default=False)
-    all = fields.Boolean(load_only=True, default=False)
 
     @pre_dump
     def prepare_obj(self, data):

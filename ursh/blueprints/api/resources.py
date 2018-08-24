@@ -11,10 +11,77 @@ from ursh.util.decorators import admin_only, authorize_request_for_url, marshal_
 
 
 class TokenResource(MethodResource):
+    """Handle token-related requests.
+    ---
+    options:
+      tags:
+      - public
+      summary: responds with the allowed HTTP methods
+      parameters:
+      - in: header
+        name: Authorization
+        description: the API key bearer
+        type: string
+        format: uuid
+        required: true
+      responses:
+        200:
+          description: OK
+        401:
+          description: not authorized
+    """
     @admin_only
     @marshal_with(TokenSchema, code=201)
     @use_kwargs(TokenSchema)
     def post(self, **kwargs):
+        """Create a new token.
+        ---
+        tags:
+        - admins
+        summary: creates a new token
+        description: >
+          Create a new API token for communicating with the API.
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: body
+          name: token
+          description: the token to create
+          required: true
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                example: newTokenName
+                description: the new token name
+              is_admin:
+                type: boolean
+                description: 'whether to create an admin token'
+              is_blocked:
+                type: boolean
+                description: 'whether the new token must be blocked'
+              callback_url:
+                type: string
+                format: url
+                description: 'a callback URL for the new token'
+                example: 'https://cern.ch'
+        responses:
+          200:
+            description: token created successfully
+            schema:
+              $ref: '#/definitions/Token'
+          400:
+            description: token `name` missing
+        """
         if kwargs.get('name') is None:
             raise generate_bad_request('missing-args', 'New tokens need to mention the "name" attribute', args=['name'])
         if Token.query.filter_by(name=kwargs['name']).count() != 0:
@@ -29,6 +96,58 @@ class TokenResource(MethodResource):
     @marshal_with(TokenSchema, code=200)
     @use_kwargs(TokenSchema)
     def patch(self, api_key=None, **kwargs):
+        """Modify an existing token.
+        ---
+        tags:
+        - admins
+        summary: modifies an existing token
+        operationId: patchToken
+        description: >
+          Modify the properties of an existing API token.
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: api_key
+          description: the API key of the token to modify
+          required: true
+          type: string
+          format: uuid
+        - in: body
+          name: updated values
+          description: the new values of the token; one or more can be specified
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              is_admin:
+                type: boolean
+                description: 'change token admin status'
+              is_blocked:
+                type: boolean
+                description: 'change token blocked status'
+              callback_url:
+                type: string
+                format: url
+                description: 'change token callback URL'
+                example: 'https://cern.ch'
+        responses:
+          200:
+            description: token modified successfully
+            schema:
+              $ref: '#/definitions/Token'
+          404:
+            description: token to modify not found
+          405:
+            description: 'method not allowed: `api_key` not specified'
+        """
         if not api_key:
             raise MethodNotAllowed
         try:
@@ -45,6 +164,37 @@ class TokenResource(MethodResource):
     @admin_only
     @use_kwargs(TokenSchema)
     def delete(self, api_key=None, **kwargs):
+        """Delete an existing token.
+        ---
+        tags:
+        - admins
+        summary: deletes an existing token
+        operationId: deleteToken
+        description: >
+          Delete an existing API token.
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: api_key
+          description: the API key of the token to delete
+          required: true
+          type: string
+          format: uuid
+        responses:
+          204:
+            description: token deleted successfully
+          404:
+            description: token to delete not found
+          405:
+            description: 'method not allowed: `api_key` not specified'
+        """
         if not api_key:
             raise MethodNotAllowed
         token = Token.query.filter_by(api_key=api_key).one_or_none()
@@ -59,6 +209,57 @@ class TokenResource(MethodResource):
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
     @use_kwargs(TokenSchema)
     def get(self, api_key=None, **kwargs):
+        """Obtain one or more tokens.
+        ---
+        tags:
+        - admins
+        summary: returns one or more tokens
+        operationId: getToken
+        description: >
+          Obtain the API tokens that match the given parameters. If `api_key` is provided,
+          then exactly one token will be returned. Otherwise, a collection of tokens that
+          match the provided parameters will be returned (maybe empty).
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: api_key
+          description: the API key of the token to obtain - may be omitted
+          type: string
+          format: uuid
+        - in: body
+          name: filters
+          description: the token filters to apply
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: tokenName
+              is_admin:
+                type: boolean
+              is_blocked:
+                type: boolean
+              callback_url:
+                type: string
+                format: url
+                example: https://cern.ch
+        responses:
+          200:
+            description: return a collection of the found tokens
+            schema:
+              format: array
+              items:
+                $ref: '#/definitions/Token'
+          404:
+            description: 'no token found for the specified `api_key`'
+        """
         if api_key is None:
             filter_params = ['name', 'is_admin', 'is_blocked', 'callback_url']
             filter_dict = {key: value for key, value in kwargs.items() if key in filter_params}
@@ -76,9 +277,79 @@ class TokenResource(MethodResource):
 
 
 class URLResource(MethodResource):
+    """
+    ---
+    options:
+      tags:
+      - public
+      summary: responds with the allowed HTTP methods
+      parameters:
+      - in: header
+        name: Authorization
+        description: the API key bearer
+        type: string
+        format: uuid
+        required: true
+      responses:
+        200:
+          description: OK
+        401:
+          description: not authorized
+    """
     @marshal_with(URLSchemaRestricted(strict=True), code=201)
     @use_kwargs(URLSchemaRestricted)
     def post(self, **kwargs):
+        """Create a new URL object.
+        ---
+        tags:
+        - admins
+        - users
+        summary: generates a new URL shortcut
+        operationId: createURL
+        description: >
+          Create a (new) shortcut for the given URL.
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: body
+          name: URL properties
+          description: the properties of the URL to create
+          required: true
+          schema:
+            type: object
+            required:
+              - url
+            properties:
+              url:
+                type: string
+                format: url
+                example: 'https://my.original.long.url/that/i-want/to/shorten'
+                description: the original URL
+              metadata:
+                type: object
+                example: {
+                  'a': 'foo',
+                  'b': 'bar'
+                }
+              allow_reuse:
+                type: boolean
+                description: >
+                  If a shortcut for the given URL already exists, then don't create a new one,
+                  but return the existing short URL.
+        responses:
+          201:
+            description: shortcut for URL created successfully
+            schema:
+              $ref: '#/definitions/URL'
+          400:
+            description: 'Bad Request: invalid `shortcut` value'
+        """
         if not kwargs.get('url'):
             raise generate_bad_request('missing-args', 'URL missing', args=['url'])
         if kwargs.get('allow_reuse'):
@@ -95,6 +366,64 @@ class URLResource(MethodResource):
     @authorize_request_for_url
     @marshal_with(URLSchemaManual(strict=True), code=201)
     def put(self, shortcut=None, **kwargs):
+        """Put a new URL object.
+        ---
+        tags:
+        - admins
+        - users
+        summary: creates a manually specified URL shortcut
+        operationId: putURL
+        description: >
+          Manually create a URL shortcut.
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: shortcut
+          description: the shortcut of the URL to put
+          required: true
+          type: string
+        - in: body
+          name: URL properties
+          description: the properties of the URL to put
+          required: true
+          schema:
+            type: object
+            required:
+              - url
+            properties:
+              url:
+                type: string
+                format: url
+                example: 'https://my.original.long.url/that/i-want/to/shorten'
+                description: the original URL
+              metadata:
+                type: object
+                example: {
+                  'a': 'foo',
+                  'b': 'bar'
+                }
+              allow_reuse:
+                type: boolean
+                description: >
+                  If a shortcut for the given URL already exists, then don't create a new one,
+                  but return the existing short URL; otherwise fail (see `409` status below).
+        responses:
+          201:
+            description: shortcut for URL put successfully
+            schema:
+              $ref: '#/definitions/URL'
+          400:
+            description: 'Bad Request: the specified shortcut is invalid'
+          409:
+            description: 'shortcut already exists and `allow_reuse=true` was not specified'
+        """
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
             if kwargs.get('allow_reuse'):
@@ -110,6 +439,64 @@ class URLResource(MethodResource):
     @authorize_request_for_url
     @marshal_with(URLSchemaManual)
     def patch(self, shortcut=None, **kwargs):
+        """Modify an existing URL object.
+        ---
+        tags:
+        - admins
+        - users
+        summary: modify an existing URL
+        operationId: patchURL
+        description: >
+          Modify the properties of an existing URL object.
+          Non-admin users may only patch their own URLs (created with their API key).
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: shortcut
+          description: the shortcut of the URL object to patch
+          required: true
+          type: string
+        - in: body
+          name: updated values
+          description: the new values of the URL object; one or more can be specified
+          schema:
+            type: object
+            required:
+              - url
+            properties:
+              url:
+                type: string
+                format: url
+                example: 'https://my.original.long.url/that/i-want/to/shorten'
+                description: the original URL
+              metadata:
+                type: object
+                example: {
+                  'a': 'foo',
+                  'b': 'bar'
+                }
+              allow_reuse:
+                type: boolean
+                description: >
+                  If a shortcut for the given URL already exists, then don't create a new one,
+                  but return the existing short URL.
+        responses:
+          200:
+            description: URL object patched successfully
+            schema:
+              $ref: '#/definitions/URL'
+          404:
+            description: 'shortcut to modify not found'
+          405:
+            description: 'method not allowed: `shortcut` not specified'
+        """
         if not shortcut:
             raise MethodNotAllowed
         metadata = kwargs.get('metadata')
@@ -124,6 +511,37 @@ class URLResource(MethodResource):
     @authorize_request_for_url
     @use_kwargs(URLSchemaManual)
     def delete(self, shortcut=None, **kwargs):
+        """Delete an existing URL object.
+        ---
+        tags:
+        - admins
+        - users
+        summary: deletes an existing URL object
+        operationId: deleteURL
+        description: >
+          Delete an existing URL object
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: shortcut
+          description: the shortcut of the URL object to delete
+          required: true
+          type: string
+        responses:
+          204:
+            description: token deleted successfully
+          404:
+            description: token to delete not found
+          405:
+            description: 'method not allowed: `shortcut` not specified'
+        """
         if not shortcut:
             raise MethodNotAllowed
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
@@ -137,6 +555,63 @@ class URLResource(MethodResource):
     @use_kwargs(URLSchemaManual)
     @authorize_request_for_url
     def get(self, shortcut=None, **kwargs):
+        """Obtain one or more URL objects.
+        ---
+        tags:
+        - admins
+        - users
+        summary: returns one or more URL objects
+        operationId: getURL
+        description: >
+          Obtain the URLs that match the given parameters. If `shortcut` is provided,
+          then exactly one URL will be returned. Otherwise, a collection of tokens that
+          match the provided parameters will be returned (maybe empty).
+          Non-admin users may only obtain their own URLs (created with their API key).
+        produces:
+        - application/json
+        parameters:
+        - in: header
+          name: Authorization
+          description: the API key bearer
+          type: string
+          format: uuid
+          required: true
+        - in: path
+          name: shortcut
+          description: the shortcut of the URL to obtain - may be omitted
+          required: true
+          type: string
+        - in: body
+          name: filters
+          description: the URL filters to apply
+          schema:
+            type: object
+            properties:
+              all:
+                type: boolean
+                description: whether to obtain all URLs; rest of filters ignored
+              url:
+                type: string
+                format: url
+                example: 'https://cern.ch'
+                description: filter by URL
+              metadata:
+                type: object
+                description: filter by arbitrary metadata (key-value dictionary)
+                example: {
+                  'a': 'foo',
+                  'b': 'bar'
+                }
+        responses:
+          200:
+            description: return a collection of the found URLs
+            schema:
+              format: array
+              items:
+                $ref: '#/definitions/URL'
+          404:
+            description: 'no URL found for the specified `shortcut`'
+        """
         if shortcut is None:
             metadata = kwargs.get('metadata')
             filters = []
