@@ -4,6 +4,9 @@ import logging.config
 import os
 
 import yaml
+from apispec import APISpec
+from apispec.ext.flask import FlaskPlugin
+from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask
 from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
@@ -112,5 +115,18 @@ def _register_blueprints(app):
 
 
 def _register_docs(app):
-    docs = FlaskApiSpec(app)
-    docs.register_existing_resources()
+    from ursh.schemas import TokenSchema, URLSchema
+    with app.app_context():
+        spec = APISpec(
+            title='ursh - URL Shortener',
+            version='2.0',
+            plugins=(
+                FlaskPlugin(),
+                MarshmallowPlugin(),
+            ),
+        )
+        spec.definition('Token', schema=TokenSchema)
+        spec.definition('URL', schema=URLSchema)
+        app.config['APISPEC_SPEC'] = spec
+        apispec = FlaskApiSpec(app)
+        apispec.register_existing_resources()
