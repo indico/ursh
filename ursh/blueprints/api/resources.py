@@ -296,7 +296,7 @@ class URLResource(MethodResource):
         401:
           description: not authorized
     """
-    @marshal_with(URLSchemaRestricted(strict=True), code=201)
+    @marshal_with(URLSchemaRestricted, code=201)
     @use_kwargs(URLSchemaRestricted)
     def post(self, **kwargs):
         """Create a new URL object.
@@ -364,7 +364,7 @@ class URLResource(MethodResource):
 
     @use_kwargs(URLSchemaManual)
     @authorize_request_for_url
-    @marshal_with(URLSchemaManual(strict=True), code=201)
+    @marshal_with(URLSchemaManual, code=201)
     def put(self, shortcut=None, **kwargs):
         """Put a new URL object.
         ---
