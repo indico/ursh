@@ -82,7 +82,7 @@ class TokenResource(MethodResource):
           400:
             description: token `name` missing
         """
-        if kwargs.get('name') is None:
+        if not kwargs.get('name'):
             raise generate_bad_request('missing-args', 'New tokens need to mention the "name" attribute', args=['name'])
         if Token.query.filter_by(name=kwargs['name']).count() != 0:
             raise Conflict({'message': 'Token with name exists', 'args': ['name']})
@@ -155,7 +155,7 @@ class TokenResource(MethodResource):
         except ValueError:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
         token = Token.query.filter_by(api_key=api_key).one_or_none()
-        if token is None:
+        if not token:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
         db.session.commit()
@@ -198,12 +198,11 @@ class TokenResource(MethodResource):
         if not api_key:
             raise MethodNotAllowed
         token = Token.query.filter_by(api_key=api_key).one_or_none()
-        if token is not None:
-            db.session.delete(token)
-            db.session.commit()
-            return Response(status=204)
-        else:
+        if not token:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
+        db.session.delete(token)
+        db.session.commit()
+        return Response(status=204)
 
     @admin_only
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
@@ -260,20 +259,19 @@ class TokenResource(MethodResource):
           404:
             description: 'no token found for the specified `api_key`'
         """
-        if api_key is None:
+        if not api_key:
             filter_params = ['name', 'is_admin', 'is_blocked', 'callback_url']
             filter_dict = {key: value for key, value in kwargs.items() if key in filter_params}
             tokens = Token.query.filter_by(**filter_dict)
             return tokens
-        else:
-            try:
-                UUID(api_key)
-            except ValueError:
-                raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
-            token = Token.query.filter_by(api_key=api_key).one_or_none()
-            if not token:
-                raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
-            return token
+        try:
+            UUID(api_key)
+        except ValueError:
+            raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
+        token = Token.query.filter_by(api_key=api_key).one_or_none()
+        if not token:
+            raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
+        return token
 
 
 class URLResource(MethodResource):
@@ -612,7 +610,7 @@ class URLResource(MethodResource):
           404:
             description: 'no URL found for the specified `shortcut`'
         """
-        if shortcut is None:
+        if not shortcut:
             metadata = kwargs.get('metadata')
             filters = []
             if kwargs.get('url'):
@@ -622,11 +620,10 @@ class URLResource(MethodResource):
             if metadata:
                 filters.append(URL.custom_data.contains(metadata))
             return URL.query.filter(*filters).all()
-        else:
-            url = URL.query.filter_by(shortcut=shortcut).one_or_none()
-            if not url:
-                raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
-            return url
+        url = URL.query.filter_by(shortcut=shortcut).one_or_none()
+        if not url:
+            raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
+        return url
 
 
 def populate_from_dict(obj, values, fields):
