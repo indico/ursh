@@ -39,6 +39,6 @@ setup(
         'pytest',
     ],
     entry_points={
-        'console_scripts': {'ursh = ursh.core.cli:cli'}
+        'console_scripts': {'ursh = ursh.cli.core:cli'}
     }
 )
