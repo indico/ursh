@@ -12,7 +12,6 @@ from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
 
 from ursh import db
-from ursh.core.cli import createdb_command
 from ursh.util.db import import_all_models
 from ursh.util.nested_query_parser import NestedQueryParser
 
@@ -42,7 +41,6 @@ def create_app(config_file=None, testing=False):
     _setup_logger(app)
     _load_config(app, config_file)
     _setup_db(app)
-    _setup_cli(app)
     _register_handlers(app)
     _register_blueprints(app)
     _register_docs(app)
@@ -91,10 +89,6 @@ def _setup_db(app):
     # ensure all models are imported even if not referenced from already-imported modules
     import_all_models(app.import_name)
     db.init_app(app)
-
-
-def _setup_cli(app):
-    app.cli.command('createdb', short_help='Creates the initial database structure.')(createdb_command)
 
 
 def _register_handlers(app):
