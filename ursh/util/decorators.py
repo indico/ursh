@@ -10,7 +10,7 @@ from ursh.models import URL
 def admin_only(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not g.token.is_admin:
+        if not g.token or not g.token.is_admin:
             return create_error_json(403, 'insufficient-permissions', 'You are not allowed to make this request')
         else:
             return f(*args, **kwargs)
