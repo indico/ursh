@@ -2,6 +2,7 @@ from uuid import UUID
 
 from flask import Response, current_app, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
+from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from ursh import db
@@ -200,8 +201,12 @@ class TokenResource(MethodResource):
         token = Token.query.filter_by(api_key=api_key).one_or_none()
         if not token:
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
-        db.session.delete(token)
-        db.session.commit()
+        try:
+            db.session.delete(token)
+            db.session.commit()
+        except IntegrityError:
+            raise Conflict({'message': 'There are URLs associated with the token specified for deletion',
+                            'args': ['api_key']})
         return Response(status=204)
 
     @admin_only
