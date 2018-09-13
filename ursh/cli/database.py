@@ -8,6 +8,6 @@ def cli():
 
 
 @cli.command()
-def createdb():
+def create():
     """Creates the initial database structure"""
     db.create_all()
