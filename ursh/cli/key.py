@@ -5,7 +5,7 @@ from ursh.cli.core import cli_group
 from ursh.models import Token
 
 
-def _api_key_print(token):
+def _print_api_key(token):
     role = 'admin' if token.is_admin else 'user'
     click.echo('Role: {role}'.format(role=role))
     click.echo('Name: {name}'.format(name=token.name))
@@ -13,19 +13,19 @@ def _api_key_print(token):
     click.echo('Blocked: {blocked}'.format(blocked=token.is_blocked))
 
 
-def _api_key_create(role, name, blocked):
+def _create_api_key(role, name, blocked):
     token = Token(name=name, is_admin=True if role == 'admin' else False, is_blocked=blocked)
     db.session.add(token)
     db.session.commit()
     click.echo('Token created successfully!\n')
-    _api_key_print(token)
+    _print_api_key(token)
     if blocked:
         click.echo('The above listed API key is blocked - you will not be able to use it until it is unblocked.')
     else:
         click.echo('You can now use the API key listed above to make ursh requests.')
 
 
-def _api_key_toggle_block(blocked, **kwargs):
+def _toggle_api_key_block(blocked, **kwargs):
     filters = {k: v for k, v in kwargs.items() if v}
     token = Token.query.filter_by(**filters).one_or_none()
     if not token:
@@ -48,7 +48,7 @@ def cli():
 @click.argument('blocked', type=bool, default=False)
 def create(role, token_name, blocked):
     """Create a new API token."""
-    _api_key_create(role, token_name, blocked)
+    _create_api_key(role, token_name, blocked)
 
 
 @cli.command()
@@ -59,7 +59,7 @@ def get(**kwargs):
     filters = {k: v for k, v in kwargs.items() if v}
     token = Token.query.filter_by(**filters).one_or_none()
     if token:
-        _api_key_print(token)
+        _print_api_key(token)
     else:
         click.echo('No API key was found for the specified filters.')
 
@@ -69,7 +69,7 @@ def get(**kwargs):
 @click.option('--api-key', '-k', metavar='API_KEY')
 def block(**kwargs):
     """Block an API key."""
-    _api_key_toggle_block(True, **kwargs)
+    _toggle_api_key_block(True, **kwargs)
 
 
 @cli.command()
@@ -77,4 +77,4 @@ def block(**kwargs):
 @click.option('--api-key', '-k', metavar='API_KEY')
 def unblock(**kwargs):
     """Unblock an API key."""
-    _api_key_toggle_block(False, **kwargs)
+    _toggle_api_key_block(False, **kwargs)
