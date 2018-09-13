@@ -1,8 +1,27 @@
+import sys
+
 import click
+from sqlalchemy.exc import IntegrityError
 
 from ursh import db
 from ursh.cli.core import cli_group
 from ursh.models import Token
+
+
+def _print_usage(command):
+    with click.Context(command) as ctx:
+        click.echo(command.get_help(ctx))
+        click.echo()
+
+
+def _success(msg):
+    click.echo('\n[SUCCESS] {}'.format(msg))
+    sys.exit(0)
+
+
+def _failure(msg):
+    click.echo('\n[FAILURE] {}'.format(msg))
+    sys.exit(1)
 
 
 def _print_api_key(token):
@@ -15,26 +34,34 @@ def _print_api_key(token):
 
 def _create_api_key(role, name, blocked):
     token = Token(name=name, is_admin=True if role == 'admin' else False, is_blocked=blocked)
-    db.session.add(token)
-    db.session.commit()
-    click.echo('Token created successfully!\n')
+    try:
+        db.session.add(token)
+        db.session.commit()
+    except IntegrityError:
+        _failure('An API key with the same name ("{name}") already exists.'.format(name=name))
     _print_api_key(token)
     if blocked:
-        click.echo('The above listed API key is blocked - you will not be able to use it until it is unblocked.')
+        _success('The above listed API key is blocked - you will not be able to use it until it is unblocked.')
     else:
-        click.echo('You can now use the API key listed above to make ursh requests.')
+        _success('You can now use the API key listed above to make ursh requests.')
 
 
 def _toggle_api_key_block(blocked, **kwargs):
     filters = {k: v for k, v in kwargs.items() if v}
     token = Token.query.filter_by(**filters).one_or_none()
     if not token:
-        click.echo('No API key was found for the specified filters.')
+        _failure('No API key was found for the specified filters.')
         return
     if token.is_blocked != blocked:
         token.is_blocked = blocked
         db.session.commit()
-    click.echo('API key {} successfully.'.format('unblocked' if not blocked else 'blocked'))
+    _success('API key {} successfully.'.format('unblocked' if not blocked else 'blocked'))
+
+
+def _validate_filters_or_die(filters, command):
+    if not any(filters.values()):
+        _print_usage(command)
+        _failure('{method}: please specify at least one option.'.format(method=command.name))
 
 
 @cli_group()
@@ -54,14 +81,33 @@ def create(role, token_name, blocked):
 @cli.command()
 @click.option('--name', '-n', metavar='NAME')
 @click.option('--api-key', '-k', metavar='API_KEY')
+def delete(**kwargs):
+    """Delete an API key."""
+    _validate_filters_or_die(kwargs, delete)
+    filters = {k: v for k, v in kwargs.items() if v}
+    token = Token.query.filter_by(**filters).one_or_none()
+    if token:
+        try:
+            db.session.delete(token)
+            db.session.commit()
+        except IntegrityError:
+            _failure('Could not delete the specified API key as there are URLs associated with it.')
+    else:
+        _failure('No API key was found for the specified filters.')
+
+
+@cli.command()
+@click.option('--name', '-n', metavar='NAME')
+@click.option('--api-key', '-k', metavar='API_KEY')
 def get(**kwargs):
     """Obtain an API key."""
+    _validate_filters_or_die(kwargs, get)
     filters = {k: v for k, v in kwargs.items() if v}
     token = Token.query.filter_by(**filters).one_or_none()
     if token:
         _print_api_key(token)
     else:
-        click.echo('No API key was found for the specified filters.')
+        _failure('No API key was found for the specified filters.')
 
 
 @cli.command()
@@ -69,6 +115,7 @@ def get(**kwargs):
 @click.option('--api-key', '-k', metavar='API_KEY')
 def block(**kwargs):
     """Block an API key."""
+    _validate_filters_or_die(kwargs, block)
     _toggle_api_key_block(True, **kwargs)
 
 
@@ -77,4 +124,5 @@ def block(**kwargs):
 @click.option('--api-key', '-k', metavar='API_KEY')
 def unblock(**kwargs):
     """Unblock an API key."""
+    _validate_filters_or_die(kwargs, unblock)
     _toggle_api_key_block(False, **kwargs)
