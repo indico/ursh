@@ -356,7 +356,7 @@ class URLResource(MethodResource):
         if not kwargs.get('url'):
             raise generate_bad_request('missing-args', 'URL missing', args=['url'])
         if kwargs.get('allow_reuse'):
-            existing_url = URL.query.filter_by(url=kwargs.get('url')).one_or_none()
+            existing_url = URL.query.filter_by(url=kwargs.get('url'), is_custom=False).one_or_none()
             if existing_url:
                 return existing_url, 201
         new_url = create_new_url(data=kwargs)
@@ -643,7 +643,7 @@ def create_new_url(data, shortcut=None):
         metadata = {}
     if shortcut in current_app.config['BLACKLISTED_URLS']:
         raise generate_bad_request('invalid-shortcut', 'Invalid shortcut', args=['shortcut'])
-    new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut)
+    new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut, is_custom=shortcut is not None)
     populate_from_dict(new_url, data, ('url', 'allow_reuse'))
     return new_url
 
