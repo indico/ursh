@@ -380,21 +380,6 @@ def test_create_url(db, app, client, data, expected, status):
         201
     ),
     (
-        # pre-existing url
-        "i-exist",
-        {'url': 'http://google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['shortcut'], 'code': 'conflict', 'description': 'Shortcut already exists'}, 'status': 409},
-        409
-    ),
-    (
-        # allow_reuse = true
-        "i-exist",
-        {'url': 'http://cern.ch', 'metadata.author': 'me', 'allow_reuse': True},
-        {'metadata': '{}', 'short_url': posixpath.join('http://localhost:5000/', 'i-exist'),
-         'url': 'http://example.com'},
-        201
-    ),
-    (
         # invalid url
         "my-short-url",
         {'url': 'google.com', 'metadata.author': 'me'},

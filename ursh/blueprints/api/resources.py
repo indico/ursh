@@ -429,10 +429,7 @@ class URLResource(MethodResource):
         """
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
-            if kwargs.get('allow_reuse'):
-                return existing_url, 201
-            else:
-                raise Conflict({'message': 'Shortcut already exists', 'args': ['shortcut']})
+            return existing_url, 201
         new_url = create_new_url(data=kwargs, shortcut=shortcut)
         db.session.add(new_url)
         db.session.commit()
