@@ -35,5 +35,5 @@ def db():
 
 
 @cli.group(cls=LazyGroup, import_name='ursh.cli.key:cli')
-def key():
+def apikey():
     """Perform API key related operations."""
