@@ -5,8 +5,8 @@ import os
 
 import yaml
 from apispec import APISpec
-from apispec.ext.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_webframeworks.flask import FlaskPlugin
 from flask import Flask
 from flask_apispec import FlaskApiSpec
 from werkzeug.contrib.fixers import ProxyFix
@@ -55,7 +55,7 @@ def _setup_logger(app):
     except KeyError:
         path = os.path.join(app.root_path, 'logging.yml')
     with open(path) as f:
-        logging.config.dictConfig(yaml.load(f))
+        logging.config.dictConfig(yaml.safe_load(f))
 
 
 def _load_config(app, config_file):
@@ -112,6 +112,7 @@ def _register_docs(app):
     from ursh.schemas import TokenSchema, URLSchema
     with app.app_context():
         spec = APISpec(
+            openapi_version='3.0.2',
             title='ursh - URL Shortener',
             version='2.0',
             plugins=(
@@ -119,8 +120,8 @@ def _register_docs(app):
                 MarshmallowPlugin(),
             ),
         )
-        spec.definition('Token', schema=TokenSchema)
-        spec.definition('URL', schema=URLSchema)
+        spec.components.schema('Token', schema=TokenSchema)
+        spec.components.schema('URL', schema=URLSchema)
         app.config['APISPEC_SPEC'] = spec
         apispec = FlaskApiSpec(app)
         apispec.register_existing_resources()

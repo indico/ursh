@@ -18,6 +18,7 @@ __pycache__/
 /build/
 *.egg-info
 *.egg
+/.eggs/
 
 # IDE files
 /.idea/
