@@ -9,7 +9,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Flask
 from flask_apispec import FlaskApiSpec
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from ursh import db
 from ursh.util.db import import_all_models
@@ -77,7 +77,7 @@ def _load_config(app, config_file):
                     value = value.lower() in ('1', 'true')
                 app.config[key] = value
     if app.config['USE_PROXY']:
-        app.wsgi_app = ProxyFix(app.wsgi_app)
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
 
 
