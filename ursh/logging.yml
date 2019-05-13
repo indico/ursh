@@ -19,7 +19,7 @@ handlers:
     formatter: message_only
 
 loggers:
-  urlshortener:
+  ursh:
     handlers: [console]
     propagate: false
     level: DEBUG

@@ -2,7 +2,7 @@
 /.venv/
 
 # config file
-/urlshortener.cfg
+/ursh.cfg
 /logging.yml
 
 # temporary files

@@ -32,7 +32,7 @@ def create_app(config_file=None, testing=False):
 
     :param config_file: A python file from which to load the config.
                         If omitted, the config file must be set using
-                        the ``URLSHORTENER_CONFIG`` environment variable.
+                        the ``URSH_CONFIG`` environment variable.
                         If set, the environment variable is ignored
     :return: A `Flask` application instance
     """
