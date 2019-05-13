@@ -11,7 +11,7 @@ from ursh.core.app import create_app
 from ursh.core.db import db as db_
 
 
-POSTGRES_MIN_VERSION = (9, 2)
+POSTGRES_MIN_VERSION = (9, 6)
 POSTGRES_VERSION = (10,)
 POSTGRES_PREFIX = '/usr/lib/postgresql/{version}/bin'.format(version='.'.join(map(str, POSTGRES_VERSION)))
 
