@@ -356,7 +356,7 @@ class URLResource(MethodResource):
         if not kwargs.get('url'):
             raise generate_bad_request('missing-args', 'URL missing', args=['url'])
         if kwargs.get('allow_reuse'):
-            existing_url = URL.query.filter_by(url=kwargs.get('url'), is_custom=False).one_or_none()
+            existing_url = URL.query.filter_by(url=kwargs.get('url'), is_custom=False).order_by(URL.shortcut).first()
             if existing_url:
                 return existing_url, 201
         new_url = create_new_url(data=kwargs)
@@ -429,7 +429,11 @@ class URLResource(MethodResource):
         """
         existing_url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if existing_url:
-            return existing_url, 201
+            if kwargs.get('allow_reuse') and existing_url.url == kwargs['url']:
+                return existing_url, 201
+            else:
+                raise Conflict({'message': 'This shortcut already exists',
+                                'args': ['shortcut']})
         new_url = create_new_url(data=kwargs, shortcut=shortcut)
         db.session.add(new_url)
         db.session.commit()
