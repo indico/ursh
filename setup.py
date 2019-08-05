@@ -22,7 +22,6 @@ with open('ursh/__init__.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(f.read().decode('utf-8')).group(1)))
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 setup(
     name='ursh',
@@ -34,11 +33,12 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     install_requires=get_requirements(),
-    setup_requires=[] + pytest_runner,
-    tests_require=[
-        'pytest',
-    ],
     entry_points={
         'console_scripts': {'ursh = ursh.cli.core:cli'}
-    }
+    },
+    extras_require={
+        'tests': [
+            'pytest'
+        ]
+    },
 )
