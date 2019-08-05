@@ -37,3 +37,8 @@ def db():
 @cli.group(cls=LazyGroup, import_name='ursh.cli.key:cli')
 def apikey():
     """Perform API key related operations."""
+
+
+@cli.group(cls=LazyGroup, import_name='ursh.cli.openapi:cli')
+def openapi():
+    """Perform OpenAPI related operations."""
