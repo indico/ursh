@@ -21,5 +21,16 @@ script:
   - flake8 .
   - isort --check-only --diff --quiet
   - pytest -rs -v
+  - ursh openapi export-json > openapi-spec.json
+  - mkdir docs
+  - npx redoc-cli bundle openapi-spec.json -o docs/index.html
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  keep_history: true
+  local_dir: ./docs
+  on:
+    branch: master
 notifications:
   email: false
