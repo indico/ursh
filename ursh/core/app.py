@@ -112,7 +112,7 @@ def _register_docs(app):
     from ursh.schemas import TokenSchema, URLSchema
     with app.app_context():
         spec = APISpec(
-            openapi_version='2.0',
+            openapi_version='3.0.2',
             title='ursh - URL Shortener',
             version='2.0',
             plugins=(
