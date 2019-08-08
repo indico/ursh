@@ -79,7 +79,7 @@ class TokenResource(MethodResource):
           200:
             description: token created successfully
             schema:
-              $ref: '#/definitions/Token'
+              $ref: '#/components/schemas/Token'
           400:
             description: token `name` missing
         """
@@ -143,7 +143,7 @@ class TokenResource(MethodResource):
           200:
             description: token modified successfully
             schema:
-              $ref: '#/definitions/Token'
+              $ref: '#/components/schemas/Token'
           404:
             description: token to modify not found
           405:
@@ -260,7 +260,7 @@ class TokenResource(MethodResource):
             schema:
               format: array
               items:
-                $ref: '#/definitions/Token'
+                $ref: '#/components/schemas/Token'
           404:
             description: 'no token found for the specified `api_key`'
         """
@@ -349,7 +349,7 @@ class URLResource(MethodResource):
           201:
             description: shortcut for URL created successfully
             schema:
-              $ref: '#/definitions/URL'
+              $ref: '#/components/schemas/URL'
           400:
             description: 'Bad Request: invalid `shortcut` value'
         """
@@ -421,7 +421,7 @@ class URLResource(MethodResource):
           201:
             description: shortcut for URL put successfully
             schema:
-              $ref: '#/definitions/URL'
+              $ref: '#/components/schemas/URL'
           400:
             description: 'Bad Request: the specified shortcut is invalid'
           409:
@@ -495,7 +495,7 @@ class URLResource(MethodResource):
           200:
             description: URL object patched successfully
             schema:
-              $ref: '#/definitions/URL'
+              $ref: '#/components/schemas/URL'
           404:
             description: 'shortcut to modify not found'
           405:
@@ -612,7 +612,7 @@ class URLResource(MethodResource):
             schema:
               format: array
               items:
-                $ref: '#/definitions/URL'
+                $ref: '#/components/schemas/URL'
           404:
             description: 'no URL found for the specified `shortcut`'
         """
