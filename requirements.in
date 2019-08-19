@@ -5,6 +5,7 @@ flask-apispec
 flask-marshmallow
 flask-shell-ipython
 flask-sqlalchemy
+gunicorn
 ipython<9
 marshmallow-sqlalchemy
 marshmallow<4
