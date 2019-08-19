@@ -12,3 +12,5 @@ pyyaml
 sqlalchemy-utc
 sqlalchemy
 werkzeug==1.0.1
+
+gunicorn
