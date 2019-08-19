@@ -11,7 +11,7 @@ from ursh.blueprints.api.resources import TokenResource, URLResource
 from ursh.models import Token
 
 
-bp = Blueprint('urls', __name__)
+bp = Blueprint('urls', __name__, url_prefix='/api')
 
 tokens_view = TokenResource.as_view('tokens')
 bp.add_url_rule('/tokens/', view_func=tokens_view)
