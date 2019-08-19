@@ -51,7 +51,7 @@ class URLSchema(SchemaBase):
     allow_reuse = fields.Boolean(load_only=True, default=False)
 
     @pre_dump
-    def prepare_obj(self, data):
+    def prepare_obj(self, data, **kwargs):
         data = {
             'url': data.url,
             'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
