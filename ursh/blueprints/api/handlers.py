@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import current_app, jsonify
 
 
 def handle_bad_requests(error):
@@ -22,6 +22,7 @@ def handle_conflict(error):
 
 
 def handle_internal_exceptions(error):
+    current_app.logger.exception('Unexpected error')
     return create_error_json(500, 'internal-error', 'Sorry, something went wrong')
 
 
