@@ -503,12 +503,12 @@ class URLResource(MethodResource):
         """
         if not shortcut:
             raise MethodNotAllowed
-        metadata = kwargs.get('metadata')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
             raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
-        url.custom_data = metadata
-        populate_from_dict(url, kwargs, ('shortcut', 'url', 'allow_reuse'))
+        if 'metadata' in kwargs:
+            url.custom_data = kwargs['metadata']
+        populate_from_dict(url, kwargs, ('url', 'allow_reuse'))
         db.session.commit()
         return url
 
