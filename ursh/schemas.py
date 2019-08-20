@@ -18,9 +18,6 @@ def validate_shortcut(shortcut, restricted):
 
 
 class SchemaBase(Schema):
-    class Meta:
-        strict = True
-
     @staticmethod
     def handle_error(error, data, **kwargs):
         raise BadRequest({'code': 'validation-error', 'messages': error.messages})
