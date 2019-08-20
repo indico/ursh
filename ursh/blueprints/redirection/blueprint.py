@@ -39,5 +39,5 @@ def redirect_to_url(shortcut):
     """
     url = URL.query.filter_by(shortcut=shortcut).one_or_none()
     if not url:
-        return Response(status=404)
+        return Response('No URL found for this shortcut', status=404, content_type='text/plain')
     return redirect(url.url)
