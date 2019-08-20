@@ -54,6 +54,7 @@ class URLSchema(SchemaBase):
     def prepare_obj(self, data, **kwargs):
         data = {
             'url': data.url,
+            'shortcut': data.shortcut,
             'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
             'metadata': data.custom_data,
             'token': data.token.api_key,
