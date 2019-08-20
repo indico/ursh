@@ -23,7 +23,9 @@ CONFIG_OPTIONS = {
     'URL_LENGTH': 'int',
     'URL_PREFIX': 'str',
     'ENABLED_BLUEPRINTS': 'list',
-    'BLACKLISTED_URLS': 'set'
+    'BLACKLISTED_URLS': 'set',
+    'INDEX_REDIRECT': 'str',
+    'ENABLE_SWAGGER': 'bool',
 }
 
 INTERNAL_URLS = frozenset({'api', 'static', 'swagger', 'swagger-ui', 'flask-apispec'})
@@ -46,7 +48,7 @@ def create_app(config_file=None, testing=False):
     _register_handlers(app)
     _register_blueprints(app)
     if app.config['ENABLE_SWAGGER']:
-        _register_docs(app)
+        _register_openapi(app)
     return app
 
 
@@ -112,7 +114,7 @@ def _register_blueprints(app):
         app.register_blueprint(blueprint)
 
 
-def _register_docs(app):
+def _register_openapi(app):
     from ursh.schemas import TokenSchema, URLSchema
     with app.app_context():
         spec = APISpec(
