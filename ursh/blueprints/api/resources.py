@@ -16,7 +16,7 @@ class TokenResource(MethodResource):
     ---
     options:
       tags:
-      - public
+      - users
       summary: responds with the allowed HTTP methods
       parameters:
       - in: header
@@ -284,7 +284,7 @@ class URLResource(MethodResource):
     ---
     options:
       tags:
-      - public
+      - users
       summary: responds with the allowed HTTP methods
       parameters:
       - in: header
