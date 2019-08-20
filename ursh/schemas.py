@@ -1,4 +1,3 @@
-import json
 import posixpath
 
 from flask import current_app
