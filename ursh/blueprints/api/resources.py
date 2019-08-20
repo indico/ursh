@@ -337,7 +337,7 @@ class URLResource(MethodResource):
                 format: url
                 example: 'https://my.original.long.url/that/i-want/to/shorten'
                 description: the original URL
-              metadata:
+              meta:
                 type: object
                 example: {
                   'a': 'foo',
@@ -366,7 +366,7 @@ class URLResource(MethodResource):
         db.session.add(new_url)
         db.session.commit()
         current_app.logger.info('URL created by %s: %s -> <%s> (%r)', g.token.name, new_url.shortcut, new_url.url,
-                                kwargs.get('metadata', {}))
+                                kwargs.get('meta', {}))
         return new_url, 201
 
     @use_kwargs(URLSchemaManual)
@@ -410,7 +410,7 @@ class URLResource(MethodResource):
                 format: url
                 example: 'https://my.original.long.url/that/i-want/to/shorten'
                 description: the original URL
-              metadata:
+              meta:
                 type: object
                 example: {
                   'a': 'foo',
@@ -442,7 +442,7 @@ class URLResource(MethodResource):
         db.session.add(new_url)
         db.session.commit()
         current_app.logger.info('URL created by %s: %s -> <%s> (%r)', g.token.name, new_url.shortcut, new_url.url,
-                                kwargs.get('metadata', {}))
+                                kwargs.get('meta', {}))
         return new_url, 201
 
     @use_kwargs(URLSchemaManual)
@@ -486,7 +486,7 @@ class URLResource(MethodResource):
                 format: url
                 example: 'https://my.original.long.url/that/i-want/to/shorten'
                 description: the original URL
-              metadata:
+              meta:
                 type: object
                 example: {
                   'a': 'foo',
@@ -512,9 +512,7 @@ class URLResource(MethodResource):
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
             raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
-        if 'metadata' in kwargs:
-            url.custom_data = kwargs['metadata']
-        populate_from_dict(url, kwargs, ('url', 'allow_reuse'))
+        populate_from_dict(url, kwargs, ('url', 'allow_reuse', 'meta'))
         db.session.commit()
         current_app.logger.info('URL updated by %s: %s (%r)', g.token.name, url.shortcut, kwargs)
         return url
@@ -607,7 +605,7 @@ class URLResource(MethodResource):
                 format: url
                 example: 'https://cern.ch'
                 description: filter by URL
-              metadata:
+              meta:
                 type: object
                 description: filter by arbitrary metadata (key-value dictionary)
                 example: {
@@ -625,14 +623,14 @@ class URLResource(MethodResource):
             description: 'no URL found for the specified `shortcut`'
         """
         if not shortcut:
-            metadata = kwargs.get('metadata')
+            meta = kwargs.get('meta')
             filters = []
             if kwargs.get('url'):
                 filters.append(URL.url == kwargs.get('url'))
             if not g.token.is_admin or not kwargs.get('all'):
                 filters.append(URL.token == g.token)
-            if metadata:
-                filters.append(URL.custom_data.contains(metadata))
+            if meta:
+                filters.append(URL.meta.contains(meta))
             return URL.query.filter(*filters).all()
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         if not url:
@@ -647,12 +645,10 @@ def populate_from_dict(obj, values, fields):
 
 
 def create_new_url(data, shortcut=None):
-    metadata = data.get('metadata')
-    if not metadata:
-        metadata = {}
+    meta = data.get('meta') or{}
     if shortcut in current_app.config['BLACKLISTED_URLS']:
         raise generate_bad_request('invalid-shortcut', 'Invalid shortcut', args=['shortcut'])
-    new_url = URL(token=g.token, custom_data=metadata, shortcut=shortcut, is_custom=shortcut is not None)
+    new_url = URL(token=g.token, meta=meta, shortcut=shortcut, is_custom=shortcut is not None)
     populate_from_dict(new_url, data, ('url', 'allow_reuse'))
     return new_url
 

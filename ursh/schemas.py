@@ -2,7 +2,7 @@ import posixpath
 
 from flask import current_app
 from flask_marshmallow import Schema
-from marshmallow import ValidationError, fields, pre_dump, validates
+from marshmallow import ValidationError, fields, validates
 from werkzeug.exceptions import BadRequest, HTTPException
 from werkzeug.routing import RequestRedirect
 from werkzeug.urls import url_parse
@@ -44,21 +44,13 @@ class URLSchema(SchemaBase):
     """
     shortcut = fields.Str(location='view_args', description='The generated or manually set URL shortcut')
     url = fields.URL(description='The original URL (the short URL target)')
-    short_url = fields.URL(description='The short URL')
-    metadata = fields.Dict(description='Additional metadata (provided upon short URL creation)')
-    owner = fields.Str(load_from='token.name', description='The name of the token than created the short URL')
+    short_url = fields.Method('_get_short_url', description='The short URL')
+    meta = fields.Dict(description='Additional metadata (provided on short URL creation)')
+    owner = fields.Str(attribute='token.name', description='The name of the token than created the short URL')
     allow_reuse = fields.Boolean(load_only=True, default=False)
 
-    @pre_dump
-    def prepare_obj(self, data, **kwargs):
-        data = {
-            'url': data.url,
-            'shortcut': data.shortcut,
-            'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
-            'metadata': data.custom_data,
-            'owner': data.token.name,
-        }
-        return data
+    def _get_short_url(self, obj):
+        return posixpath.join(current_app.config['REDIRECTION_HOST'], obj.shortcut)
 
 
 class URLSchemaManual(URLSchema):

@@ -39,7 +39,7 @@ class URL(db.Model):
     url = db.Column(db.String, nullable=False)
     token_id = db.Column(db.ForeignKey('tokens.id'), nullable=False)
     is_custom = db.Column(db.Boolean, default=False, nullable=False)
-    custom_data = db.Column(JSONB, default={}, nullable=False)
+    meta = db.Column(JSONB, default={}, nullable=False)
 
     token = db.relationship('Token', back_populates='urls')
 

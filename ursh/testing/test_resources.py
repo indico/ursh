@@ -312,13 +312,13 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     (
         # everything works right, a new url is created
         {'url': 'http://cern.ch'},
-        {'metadata': {}, 'url': 'http://cern.ch'},
+        {'meta': {}, 'url': 'http://cern.ch'},
         201
     ),
     (
         # everything works right, a new url is created with metadata
-        {'url': 'http://cern.ch', 'metadata.author': 'me', 'metadata.a': False},
-        {'metadata': {"author": "me", "a": "False"}, 'url': 'http://cern.ch'},
+        {'url': 'http://cern.ch', 'meta.author': 'me', 'meta.a': False},
+        {'meta': {"author": "me", "a": "False"}, 'url': 'http://cern.ch'},
         201
     ),
     (
@@ -336,7 +336,7 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     (
         # allow_reuse=true
         {'url': 'http://existing.com', 'allow_reuse': True},
-        {'metadata': {}, 'url': 'http://existing.com'},
+        {'meta': {}, 'url': 'http://existing.com'},
         400
     )
 ])
@@ -371,43 +371,43 @@ def test_create_url(db, app, client, data, expected, status):
     (
         # everything goes right
         "my-short-url",
-        {'url': 'http://google.com', 'metadata.author': 'me'},
-        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
+        {'url': 'http://google.com', 'meta.author': 'me'},
+        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
          'url': 'http://google.com'},
         201
     ),
     (
         # invalid url
         "my-short-url",
-        {'url': 'google.com', 'metadata.author': 'me'},
+        {'url': 'google.com', 'meta.author': 'me'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "my-short-url",
-        {'url': '', 'metadata.author': 'me'},
+        {'url': '', 'meta.author': 'me'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # url with invalid characters
         "my-short-url*",
-        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'url': 'https://google.com', 'meta.author': 'me'},
         {'error': {'code': 'validation-error', 'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
         400
     ),
     (
         # url with slash
         "my-short-url/i-look-suspicious",
-        {'url': 'https://google.com', 'metadata.author': 'me'},
+        {'url': 'https://google.com', 'meta.author': 'me'},
         {},
         404
     ),
     (
         # blacklisted URL
         "api",
-        {'url': '', 'metadata.author': 'me'},
+        {'url': '', 'meta.author': 'me'},
         {'error': {'code': 'validation-error',
                    'messages': {'shortcut': ['Invalid value.'], 'url': ['Not a valid URL.']}}, 'status': 400},
         400
@@ -434,29 +434,29 @@ def test_put_url(db, client, name, data, expected, status):
     (
         # everything goes right
         "abc",
-        {'metadata.author': 'me', 'url': 'http://example.com'},
-        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'meta.author': 'me', 'url': 'http://example.com'},
+        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
         200
     ),
     (
         # nonexistent shortcut
         "nonexistent",
-        {'metadata.author': 'me', 'url': 'http://example.com'},
+        {'meta.author': 'me', 'url': 'http://example.com'},
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
         404
     ),
     (
         # invalid url
         "abc",
-        {'metadata.author': 'me', 'url': 'example.com'},
+        {'meta.author': 'me', 'url': 'example.com'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "abc",
-        {'metadata.author': 'me', 'url': ''},
+        {'meta.author': 'me', 'url': ''},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
@@ -519,11 +519,11 @@ def test_delete_url(db, client, shortcut, expected, status):
         # everything goes right
         '/api/urls/',
         {},
-        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'},
-         {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
         200
     ),
@@ -531,7 +531,7 @@ def test_delete_url(db, client, shortcut, expected, status):
         # everything goes right, asking for specific shortcut
         '/api/urls/abc',
         {},
-        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
         200
     ),
@@ -539,27 +539,27 @@ def test_delete_url(db, client, shortcut, expected, status):
         # filter based on url
         '/api/urls/',
         {'url': 'http://example.com'},
-        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'}],
         200
     ),
     (
         # filter based on metadata fields
         '/api/urls/',
-        {'metadata.author': 'me'},
-        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'meta.author': 'me'},
+        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
         200
     ),
     (
         # filter based on both url and metadata fields
         '/api/urls/',
-        {'url': 'http://example.com', 'metadata.author': 'me'},
-        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'url': 'http://example.com', 'meta.author': 'me'},
+        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'}],
         200
     ),
@@ -574,10 +574,10 @@ def test_delete_url(db, client, shortcut, expected, status):
 def test_get_url(db, client, url, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=auth)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'}, headers=auth)
+    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
                headers=auth)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=auth)
+    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -604,18 +604,18 @@ def test_get_admin_all(db, client):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
                headers=non_admin_auth1)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
+    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
                headers=non_admin_auth2)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
+    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=admin_auth)
     response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
-    expected = [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+    expected = [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
                  'url': 'http://example.com'},
-                {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+                {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
                  'url': 'http://example.com'},
-                {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+                {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
                  'url': 'http://cern.ch'}]
 
     assert response.status_code == 200
@@ -633,7 +633,7 @@ def test_other_user(db, client, method):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
                headers=non_admin_auth1)
     method = getattr(client, method)
     response = method('/api/urls/abc', query_string={}, headers=non_admin_auth2)
