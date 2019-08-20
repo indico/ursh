@@ -23,8 +23,8 @@ class SchemaBase(Schema):
         strict = True
 
     @staticmethod
-    def handle_error(error, data):
-        raise BadRequest({'code': 'validation-error', 'args': sorted(error.field_names), 'messages': error.messages})
+    def handle_error(error, data, **kwargs):
+        raise BadRequest({'code': 'validation-error', 'messages': error.messages})
 
 
 class TokenSchema(SchemaBase):

@@ -51,8 +51,7 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         # invalid callback URL
         True,
         {'name': 'abc', 'callback_url': 'fake'},
-        {'error': {'args': ['callback_url'], 'code': 'validation-error',
-                   'messages': {'callback_url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'callback_url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
@@ -69,7 +68,7 @@ def test_create_token(db, client, admin, data, expected, status_code):
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
-    response = client.post('/tokens/', data=data, headers=auth)
+    response = client.post('/api/tokens/', data=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status_code
@@ -84,8 +83,8 @@ def test_create_token(db, client, admin, data, expected, status_code):
 
 def test_create_token_name_exists(db, client):
     auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
-    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    response = client.post('/tokens/', data={'name': 'abc'}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    response = client.post('/api/tokens/', data={'name': 'abc'}, headers=auth)
     expected = {'error': {'args': ['name'], 'code': 'conflict', 'description': 'Token with name exists'}, 'status': 409}
 
     assert response.status_code == 409
@@ -96,7 +95,7 @@ def test_create_token_name_exists(db, client):
     (
         # filter based on name
         True,
-        '/tokens/',
+        '/api/tokens/',
         {'name': 'abc'},
         [{'callback_url': 'http://cern.ch', 'is_admin': False,
           'is_blocked': False, 'name': 'abc', 'token_uses': 0}],
@@ -105,7 +104,7 @@ def test_create_token_name_exists(db, client):
     (
         # get all tokens
         True,
-        '/tokens/',
+        '/api/tokens/',
         {},
         [{'callback_url': None, 'is_admin': False, 'is_blocked': False, 'name': 'non-admin', 'token_uses': 0},
          {'callback_url': 'http://cern.ch', 'is_admin': False, 'is_blocked': False, 'name': 'abc', 'token_uses': 0},
@@ -118,7 +117,7 @@ def test_create_token_name_exists(db, client):
     (
         # attempt to get token info by non-admin
         False,
-        '/tokens/',
+        '/api/tokens/',
         {},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
@@ -127,7 +126,7 @@ def test_create_token_name_exists(db, client):
     (
         # attempt to get specific token info with invalid UUID
         True,
-        '/tokens/abc',
+        '/api/tokens/abc',
         {},
         {'error': {'args': ['api_key'], 'code': 'not-found', 'description': 'API key does not exist'},
          'status': 404},
@@ -136,7 +135,7 @@ def test_create_token_name_exists(db, client):
     (
         # access specific token from non-admin
         False,
-        '/tokens/abc',
+        '/api/tokens/abc',
         {},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
@@ -145,7 +144,7 @@ def test_create_token_name_exists(db, client):
     (
         # filter based on other parameters
         True,
-        '/tokens/',
+        '/api/tokens/',
         {'callback_url': 'http://a.ch', 'is_admin': False},
         [{'callback_url': 'http://a.ch', 'is_admin': False, 'is_blocked': True, 'name': 'abcd1', 'token_uses': 0}],
         200
@@ -157,12 +156,12 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
-                                  'is_admin': True, 'is_blocked': True}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
-                                  'is_admin': False, 'is_blocked': True}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
+                                      'is_admin': True, 'is_blocked': True}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
+                                      'is_admin': False, 'is_blocked': True}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -235,15 +234,15 @@ def test_token_patch(db, client, admin, name, data, expected, status):
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
-                                  'is_admin': True, 'is_blocked': True}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
-                                  'is_admin': False, 'is_blocked': True}, headers=auth)
-    client.post('/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
+                                      'is_admin': True, 'is_blocked': True}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
+                                      'is_admin': False, 'is_blocked': True}, headers=auth)
+    client.post('/api/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
     token = Token.query.filter_by(name=name).one_or_none()
     uuid = token.api_key if token else name  # assume we want to use the name as an API key if it is not present
-    response = client.patch(f'/tokens/{uuid}', query_string=data, headers=auth)
+    response = client.patch(f'/api/tokens/{uuid}', query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -271,9 +270,9 @@ def test_token_delete(db, client, admin, expected, status):
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
     admin_auth = make_auth(db, 'admin_', is_admin=True, is_blocked=False)
 
-    client.post('/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
+    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
     api_key = Token.query.filter_by(name='abc').one_or_none().api_key
-    response = client.delete(f'/tokens/{api_key}', headers=auth)
+    response = client.delete(f'/api/tokens/{api_key}', headers=auth)
 
     assert response.status_code == status
     if status == 204:
@@ -283,15 +282,15 @@ def test_token_delete(db, client, admin, expected, status):
 
 
 @pytest.mark.parametrize("method,url,data", [
-    ('post', '/tokens/', {'name': 'abc', 'callback_url': 'http://cern.ch'}),
-    ('get', '/tokens/', {}),
-    ('patch', '/tokens/abc', {}),
-    ('delete', '/tokens/abc', {}),
-    ('post', '/urls/', {'url': 'abc'}),
-    ('get', '/urls/', {}),
-    ('patch', '/urls/abc', {}),
-    ('delete', '/urls/abc', {}),
-    ('put', '/urls/abc', {})
+    ('post', '/api/tokens/', {'name': 'abc', 'callback_url': 'http://cern.ch'}),
+    ('get', '/api/tokens/', {}),
+    ('patch', '/api/tokens/abc', {}),
+    ('delete', '/api/tokens/abc', {}),
+    ('post', '/api/urls/', {'url': 'abc'}),
+    ('get', '/api/urls/', {}),
+    ('patch', '/api/urls/abc', {}),
+    ('delete', '/api/urls/abc', {}),
+    ('put', '/api/urls/abc', {})
 ])
 @pytest.mark.parametrize("blocked", [True, False])
 def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
@@ -325,15 +324,13 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     (
         # invalid url
         {'url': 'fake'},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         {'url': ''},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
@@ -348,11 +345,11 @@ def test_create_url(db, app, client, data, expected, status):
 
     existing_shortcut = ''
     if data.get('allow_reuse'):
-        existing = client.post('/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
+        existing = client.post('/api/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
         existing = existing.get_json()
         existing_short_url = existing.get('short_url')
         assert existing_short_url is not None
-    response = client.post('/urls/', query_string=data, headers=auth)
+    response = client.post('/api/urls/', query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     for key, value in expected.items():
@@ -383,38 +380,35 @@ def test_create_url(db, app, client, data, expected, status):
         # invalid url
         "my-short-url",
         {'url': 'google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "my-short-url",
         {'url': '', 'metadata.author': 'me'},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # url with invalid characters
         "my-short-url*",
         {'url': 'https://google.com', 'metadata.author': 'me'},
-        {'error': {'args': ['shortcut'], 'code': 'validation-error',
-                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
         400
     ),
     (
         # url with slash
-        "my-short-url/i-look-suspicious*",
+        "my-short-url/i-look-suspicious",
         {'url': 'https://google.com', 'metadata.author': 'me'},
         {},
         404
     ),
     (
         # blacklisted URL
-        "tokens",
+        "api",
         {'url': '', 'metadata.author': 'me'},
-        {'error': {'args': ['shortcut', 'url'], 'code': 'validation-error',
+        {'error': {'code': 'validation-error',
                    'messages': {'shortcut': ['Invalid value.'], 'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
@@ -422,8 +416,8 @@ def test_create_url(db, app, client, data, expected, status):
 def test_put_url(db, client, name, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/urls/i-exist', query_string={'url': 'http://example.com'}, headers=auth)
-    response = client.put(f'/urls/{name}', query_string=data, headers=auth)
+    client.put('/api/urls/i-exist', query_string={'url': 'http://example.com'}, headers=auth)
+    response = client.put(f'/api/urls/{name}', query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -456,16 +450,14 @@ def test_put_url(db, client, name, data, expected, status):
         # invalid url
         "abc",
         {'metadata.author': 'me', 'url': 'example.com'},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "abc",
         {'metadata.author': 'me', 'url': ''},
-        {'error': {'args': ['url'], 'code': 'validation-error',
-                   'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
+        {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
 ])
@@ -473,9 +465,9 @@ def test_patch_url(db, client, shortcut, data, expected, status):
     auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=auth1)
-    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=auth2)
-    response = client.patch(f'/urls/{shortcut}', query_string=data, headers=auth1)
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth1)
+    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth2)
+    response = client.patch(f'/api/urls/{shortcut}', query_string=data, headers=auth1)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -507,9 +499,9 @@ def test_patch_url(db, client, shortcut, data, expected, status):
 def test_delete_url(db, client, shortcut, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/urls/abc', query_string={'url': 'http://example.com'}, headers=auth)
-    client.put('/urls/def', query_string={'url': 'http://example.com'}, headers=auth)
-    response = client.delete(f'/urls/{shortcut}', headers=auth)
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth)
+    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth)
+    response = client.delete(f'/api/urls/{shortcut}', headers=auth)
 
     assert response.status_code == status
     if status == 204:
@@ -525,7 +517,7 @@ def test_delete_url(db, client, shortcut, expected, status):
 @pytest.mark.parametrize("url,data,expected,status", [
     (
         # everything goes right
-        '/urls/',
+        '/api/urls/',
         {},
         [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
@@ -537,7 +529,7 @@ def test_delete_url(db, client, shortcut, expected, status):
     ),
     (
         # everything goes right, asking for specific shortcut
-        '/urls/abc',
+        '/api/urls/abc',
         {},
         {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
@@ -545,7 +537,7 @@ def test_delete_url(db, client, shortcut, expected, status):
     ),
     (
         # filter based on url
-        '/urls/',
+        '/api/urls/',
         {'url': 'http://example.com'},
         [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
@@ -555,7 +547,7 @@ def test_delete_url(db, client, shortcut, expected, status):
     ),
     (
         # filter based on metadata fields
-        '/urls/',
+        '/api/urls/',
         {'metadata.author': 'me'},
         [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
@@ -565,7 +557,7 @@ def test_delete_url(db, client, shortcut, expected, status):
     ),
     (
         # filter based on both url and metadata fields
-        '/urls/',
+        '/api/urls/',
         {'url': 'http://example.com', 'metadata.author': 'me'},
         [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'}],
@@ -573,7 +565,7 @@ def test_delete_url(db, client, shortcut, expected, status):
     ),
     (
         # invalid shortcut
-        '/urls/xyz',
+        '/api/urls/xyz',
         {},
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
         404
@@ -582,10 +574,10 @@ def test_delete_url(db, client, shortcut, expected, status):
 def test_get_url(db, client, url, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=auth)
-    client.put('/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'}, headers=auth)
+    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
                headers=auth)
-    client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=auth)
+    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -612,12 +604,12 @@ def test_get_admin_all(db, client):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
                headers=non_admin_auth1)
-    client.put('/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
+    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'metadata.owner': 'all', 'metadata.a': 'b'},
                headers=non_admin_auth2)
-    client.put('/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
-    response = client.get('/urls/', query_string={'all': True}, headers=admin_auth)
+    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
+    response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
     expected = [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
                  'url': 'http://example.com'},
@@ -641,10 +633,10 @@ def test_other_user(db, client, method):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
+    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'metadata.author': 'me'},
                headers=non_admin_auth1)
     method = getattr(client, method)
-    response = method('/urls/abc', query_string={}, headers=non_admin_auth2)
+    response = method('/api/urls/abc', query_string={}, headers=non_admin_auth2)
     expected = {'error': {'code': 'insufficient-permissions',
                           'description': 'You are not allowed to make this request'},
                 'status': 403}
