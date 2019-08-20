@@ -312,13 +312,13 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     (
         # everything works right, a new url is created
         {'url': 'http://cern.ch'},
-        {'metadata': '{}', 'url': 'http://cern.ch'},
+        {'metadata': {}, 'url': 'http://cern.ch'},
         201
     ),
     (
         # everything works right, a new url is created with metadata
         {'url': 'http://cern.ch', 'metadata.author': 'me', 'metadata.a': False},
-        {'metadata': '{"author": "me", "a": "False"}', 'url': 'http://cern.ch'},
+        {'metadata': {"author": "me", "a": "False"}, 'url': 'http://cern.ch'},
         201
     ),
     (
@@ -336,7 +336,7 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     (
         # allow_reuse=true
         {'url': 'http://existing.com', 'allow_reuse': True},
-        {'metadata': '{}', 'url': 'http://existing.com'},
+        {'metadata': {}, 'url': 'http://existing.com'},
         400
     )
 ])
@@ -372,7 +372,7 @@ def test_create_url(db, app, client, data, expected, status):
         # everything goes right
         "my-short-url",
         {'url': 'http://google.com', 'metadata.author': 'me'},
-        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
+        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
          'url': 'http://google.com'},
         201
     ),
@@ -435,7 +435,7 @@ def test_put_url(db, client, name, data, expected, status):
         # everything goes right
         "abc",
         {'metadata.author': 'me', 'url': 'http://example.com'},
-        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
         200
     ),
@@ -519,11 +519,11 @@ def test_delete_url(db, client, shortcut, expected, status):
         # everything goes right
         '/api/urls/',
         {},
-        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'},
-         {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
         200
     ),
@@ -531,7 +531,7 @@ def test_delete_url(db, client, shortcut, expected, status):
         # everything goes right, asking for specific shortcut
         '/api/urls/abc',
         {},
-        {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
         200
     ),
@@ -539,9 +539,9 @@ def test_delete_url(db, client, shortcut, expected, status):
         # filter based on url
         '/api/urls/',
         {'url': 'http://example.com'},
-        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'}],
         200
     ),
@@ -549,9 +549,9 @@ def test_delete_url(db, client, shortcut, expected, status):
         # filter based on metadata fields
         '/api/urls/',
         {'metadata.author': 'me'},
-        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
         200
     ),
@@ -559,7 +559,7 @@ def test_delete_url(db, client, shortcut, expected, status):
         # filter based on both url and metadata fields
         '/api/urls/',
         {'url': 'http://example.com', 'metadata.author': 'me'},
-        [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'}],
         200
     ),
@@ -611,11 +611,11 @@ def test_get_admin_all(db, client):
     client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'metadata.author': 'me'}, headers=admin_auth)
     response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
-    expected = [{'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+    expected = [{'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
                  'url': 'http://example.com'},
-                {'metadata': '{"a": "b", "owner": "all"}', 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+                {'metadata': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
                  'url': 'http://example.com'},
-                {'metadata': '{"author": "me"}', 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+                {'metadata': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
                  'url': 'http://cern.ch'}]
 
     assert response.status_code == 200

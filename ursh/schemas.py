@@ -55,7 +55,7 @@ class URLSchema(SchemaBase):
         data = {
             'url': data.url,
             'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
-            'metadata': json.dumps(data.custom_data),
+            'metadata': data.custom_data,
             'token': data.token.api_key,
         }
         return data
