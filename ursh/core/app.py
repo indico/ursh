@@ -26,6 +26,8 @@ CONFIG_OPTIONS = {
     'BLACKLISTED_URLS': 'set'
 }
 
+INTERNAL_URLS = frozenset({'api', 'static', 'swagger', 'swagger-ui', 'flask-apispec'})
+
 
 def create_app(config_file=None, testing=False):
     """Factory to create the Flask application
@@ -79,6 +81,7 @@ def _load_config(app, config_file):
     if app.config['USE_PROXY']:
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config['APISPEC_WEBARGS_PARSER'] = NestedQueryParser()
+    app.config['BLACKLISTED_URLS'] = set(app.config['BLACKLISTED_URLS']) | INTERNAL_URLS
 
 
 def _setup_db(app):
