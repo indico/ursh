@@ -38,7 +38,7 @@ def create_app(config_file=None, testing=False):
                         If set, the environment variable is ignored
     :return: A `Flask` application instance
     """
-    app = Flask('ursh')
+    app = Flask('ursh', static_folder=None)
     app.testing = testing
     _setup_logger(app)
     _load_config(app, config_file)
