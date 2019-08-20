@@ -91,6 +91,7 @@ class TokenResource(MethodResource):
         populate_from_dict(new_token, kwargs, ('name', 'is_admin', 'is_blocked', 'callback_url'))
         db.session.add(new_token)
         db.session.commit()
+        current_app.logger.info('Token created by %s: %s (admin: %s)', g.token.name, new_token.name, new_token.is_admin)
         return new_token, 201
 
     @admin_only
@@ -160,6 +161,7 @@ class TokenResource(MethodResource):
             raise NotFound({'message': 'API key does not exist', 'args': ['api_key']})
         populate_from_dict(token, kwargs, ('is_admin', 'is_blocked', 'callback_url'))
         db.session.commit()
+        current_app.logger.info('Token updated by %s: %s (%r)', g.token.name, token.name, kwargs)
         return token
 
     @admin_only
@@ -207,6 +209,7 @@ class TokenResource(MethodResource):
         except IntegrityError:
             raise Conflict({'message': 'There are URLs associated with the token specified for deletion',
                             'args': ['api_key']})
+        current_app.logger.info('Token deleted by %s: %s', g.token.name, token.name)
         return Response(status=204)
 
     @admin_only
@@ -362,7 +365,8 @@ class URLResource(MethodResource):
         new_url = create_new_url(data=kwargs)
         db.session.add(new_url)
         db.session.commit()
-
+        current_app.logger.info('URL created by %s: %s -> <%s> (%r)', g.token.name, new_url.shortcut, new_url.url,
+                                kwargs.get('metadata', {}))
         return new_url, 201
 
     @use_kwargs(URLSchemaManual)
@@ -437,6 +441,8 @@ class URLResource(MethodResource):
         new_url = create_new_url(data=kwargs, shortcut=shortcut)
         db.session.add(new_url)
         db.session.commit()
+        current_app.logger.info('URL created by %s: %s -> <%s> (%r)', g.token.name, new_url.shortcut, new_url.url,
+                                kwargs.get('metadata', {}))
         return new_url, 201
 
     @use_kwargs(URLSchemaManual)
@@ -510,6 +516,7 @@ class URLResource(MethodResource):
             url.custom_data = kwargs['metadata']
         populate_from_dict(url, kwargs, ('url', 'allow_reuse'))
         db.session.commit()
+        current_app.logger.info('URL updated by %s: %s (%r)', g.token.name, url.shortcut, kwargs)
         return url
 
     @authorize_request_for_url
@@ -553,6 +560,7 @@ class URLResource(MethodResource):
             raise NotFound({'message': 'Shortcut does not exist', 'args': ['shortcut']})
         db.session.delete(url)
         db.session.commit()
+        current_app.logger.info('URL deleted by %s: %s -> <%s>', g.token.name, url.shortcut, url.url)
         return Response(status=204)
 
     @marshal_many_or_one(URLSchemaManual, 'shortcut', code=200)
