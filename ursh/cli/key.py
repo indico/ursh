@@ -26,8 +26,8 @@ def _failure(msg):
 
 def _print_api_key(token):
     role = 'admin' if token.is_admin else 'user'
-    click.echo('Role: {role}'.format(role=role))
     click.echo('Name: {name}'.format(name=token.name))
+    click.echo('Role: {role}'.format(role=role))
     click.echo('API key: {key}'.format(key=token.api_key))
     click.echo('Blocked: {blocked}'.format(blocked=token.is_blocked))
 
@@ -100,7 +100,7 @@ def delete(**kwargs):
 @click.option('--name', '-n', metavar='NAME')
 @click.option('--api-key', '-k', metavar='API_KEY')
 def get(**kwargs):
-    """Obtain an API key."""
+    """Display information about an API key."""
     _validate_filters_or_die(kwargs, get)
     filters = {k: v for k, v in kwargs.items() if v}
     token = Token.query.filter_by(**filters).one_or_none()
@@ -108,6 +108,16 @@ def get(**kwargs):
         _print_api_key(token)
     else:
         _failure('No API key was found for the specified filters.')
+
+
+@cli.command()
+def list():
+    """List all API keys."""
+    tokens = Token.query.order_by(Token.name).all()
+    for token in tokens:
+        admin = ' (admin)' if token.is_admin else ''
+        blocked = ' (blocked)' if token.is_blocked else ''
+        print(f'{token.name}: {token.api_key}{admin}{blocked}')
 
 
 @cli.command()
