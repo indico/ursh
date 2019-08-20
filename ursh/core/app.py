@@ -45,7 +45,8 @@ def create_app(config_file=None, testing=False):
     _setup_db(app)
     _register_handlers(app)
     _register_blueprints(app)
-    _register_docs(app)
+    if app.config['ENABLE_SWAGGER']:
+        _register_docs(app)
     return app
 
 
