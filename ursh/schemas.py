@@ -46,7 +46,7 @@ class URLSchema(SchemaBase):
     url = fields.URL(description='The original URL (the short URL target)')
     short_url = fields.URL(description='The short URL')
     metadata = fields.Dict(description='Additional metadata (provided upon short URL creation)')
-    token = fields.Str(load_from='token.api_key', description='The token than created the short URL')
+    owner = fields.Str(load_from='token.name', description='The name of the token than created the short URL')
     allow_reuse = fields.Boolean(load_only=True, default=False)
 
     @pre_dump
@@ -56,7 +56,7 @@ class URLSchema(SchemaBase):
             'shortcut': data.shortcut,
             'short_url': posixpath.join(current_app.config['REDIRECTION_HOST'], data.shortcut),
             'metadata': data.custom_data,
-            'token': data.token.api_key,
+            'owner': data.token.name,
         }
         return data
 

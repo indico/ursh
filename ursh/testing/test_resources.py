@@ -358,7 +358,7 @@ def test_create_url(db, app, client, data, expected, status):
         if data.get('allow_reuse'):
             assert data.get('shortcut') == existing_shortcut
         assert parsed_response.get('short_url') is not None
-        assert parsed_response.get('token') is not None
+        assert parsed_response.get('owner') is not None
         shortcut = url_parse(parsed_response['short_url']).path.lstrip('/')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
@@ -425,7 +425,7 @@ def test_put_url(db, client, name, data, expected, status):
         assert value == parsed_response[key]
     if status == 200:
         assert parsed_response.get('short_url') is not None
-        assert parsed_response.get('token') is not None
+        assert parsed_response.get('owner') is not None
         url = URL.query.filter_by(shortcut=name)
         assert url is not None
 
@@ -477,9 +477,9 @@ def test_patch_url(db, client, shortcut, data, expected, status):
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
         assert parsed_response.get('short_url') is not None
-        assert parsed_response.get('token') is not None
+        assert parsed_response.get('owner') is not None
         assert url.url == data.get('url')
-        assert url.token.api_key == parsed_response.get('token')
+        assert url.token.name == parsed_response.get('owner')
 
 
 @pytest.mark.parametrize("shortcut,expected,status", [
@@ -589,13 +589,13 @@ def test_get_url(db, client, url, data, expected, status):
             for key, value in expected_token.items():
                 assert value == returned_token[key]
             if status == 200:
-                assert returned_token.get('token') is not None
+                assert returned_token.get('owner') is not None
                 assert returned_token.get('url') is not None
     else:
         for key, value in expected.items():
             assert value == parsed_response[key]
         if status == 200:
-            assert parsed_response.get('token') is not None
+            assert parsed_response.get('owner') is not None
             assert parsed_response.get('url') is not None
 
 
@@ -624,7 +624,7 @@ def test_get_admin_all(db, client):
     for expected_token, returned_token in zip(expected, parsed_response):
         for key, value in expected_token.items():
             assert value == returned_token[key]
-        assert returned_token.get('token') is not None
+        assert returned_token.get('owner') is not None
         assert returned_token.get('url') is not None
 
 
