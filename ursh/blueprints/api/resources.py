@@ -645,7 +645,7 @@ def populate_from_dict(obj, values, fields):
 
 
 def create_new_url(data, shortcut=None):
-    meta = data.get('meta') or{}
+    meta = data.get('meta') or {}
     if shortcut in current_app.config['BLACKLISTED_URLS']:
         raise generate_bad_request('invalid-shortcut', 'Invalid shortcut', args=['shortcut'])
     new_url = URL(token=g.token, meta=meta, shortcut=shortcut, is_custom=shortcut is not None)
