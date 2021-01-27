@@ -8,6 +8,7 @@
 # temporary files
 *~
 .*.swp
+.tox/
 
 # bytecode
 *.py[co]
@@ -23,6 +24,7 @@ __pycache__/
 # IDE files
 /.idea/
 *.sublime-*
+.vscode/
 
 # testing
 /.cache/

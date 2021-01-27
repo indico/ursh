@@ -1,1 +1,2 @@
 recursive-include ursh *.yml *.cfg ursh.wsgi
+include requirements.txt
