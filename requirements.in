@@ -1,0 +1,14 @@
+apispec-webframeworks==0.5.2
+flask-apispec==0.8.8
+flask-marshmallow==0.12.0
+flask-shell-ipython
+flask-sqlalchemy==2.4.1
+flask==1.1.2
+marshmallow-sqlalchemy==0.23.0
+markupsafe<2.1
+itsdangerous<2.1
+psycopg2
+pyyaml
+sqlalchemy-utc
+sqlalchemy
+werkzeug==1.0.1
