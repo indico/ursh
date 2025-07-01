@@ -36,7 +36,7 @@ jobs:
           key: uv|${{ runner.os }}|3.12|${{ hashFiles('requirements*.txt', 'pyproject.toml') }}
 
       - name: Install ursh
-        run: uv pip install -e .
+        run: uv pip install --system -e .
 
       - name: Build API docs
         run: |
