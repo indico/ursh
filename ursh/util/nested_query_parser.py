@@ -4,13 +4,12 @@ Taken from the sample custom parser on http://webargs.readthedocs.io/en/latest/a
 
 import re
 
-from webargs import core
 from webargs.flaskparser import FlaskParser
 
 
 class NestedQueryParser(FlaskParser):
-    def parse_querystring(self, req, name, field):
-        return core.get_value(_structure_dict(req.args), name, field)
+    def load_querystring(self, req, schema):
+        return _structure_dict(req.args)
 
 
 def _structure_dict(dict_):

@@ -39,7 +39,7 @@ class URLSchema(SchemaBase):
 
     Note: use one of the sub-classes below for validation, depending on the shortcut requirements.
     """
-    shortcut = fields.Str(location='view_args', description='The generated or manually set URL shortcut')
+    shortcut = fields.Str(description='The generated or manually set URL shortcut')
     url = fields.URL(description='The original URL (the short URL target)')
     short_url = fields.Method('_get_short_url', description='The short URL')
     meta = fields.Dict(description='Additional metadata (provided on short URL creation)')
@@ -50,8 +50,10 @@ class URLSchema(SchemaBase):
         return posixpath.join(current_app.config['REDIRECTION_HOST'], obj.shortcut)
 
 
-class URLSchemaManual(URLSchema):
+class ShortcutSchemaManual(SchemaBase):
     """Validator for user-specified shortcuts (i.e. all requests except POST)."""
+
+    shortcut = fields.Str(description='The generated or manually set URL shortcut')
 
     @validates('shortcut')
     def validate_shortcut(self, data):
@@ -59,8 +61,10 @@ class URLSchemaManual(URLSchema):
             raise ValidationError('Invalid value.')
 
 
-class URLSchemaRestricted(URLSchema):
+class ShortcutSchemaRestricted(SchemaBase):
     """Validator for auto-generated shortcuts (i.e. POST requests)."""
+
+    shortcut = fields.Str(description='The generated or manually set URL shortcut')
 
     @validates('shortcut')
     def validate_shortcut(self, data):
