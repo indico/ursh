@@ -345,11 +345,11 @@ def test_create_url(db, app, client, data, expected, status):
 
     existing_shortcut = ''
     if data.get('allow_reuse'):
-        existing = client.post('/api/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
+        existing = client.post('/api/urls/', json={'url': 'http://existing.com'}, headers=auth)
         existing = existing.get_json()
         existing_short_url = existing.get('short_url')
         assert existing_short_url is not None
-    response = client.post('/api/urls/', query_string=data, headers=auth)
+    response = client.post('/api/urls/', json=data, headers=auth)
     parsed_response = response.get_json()
 
     for key, value in expected.items():
@@ -416,8 +416,8 @@ def test_create_url(db, app, client, data, expected, status):
 def test_put_url(db, client, name, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/i-exist', query_string={'url': 'http://example.com'}, headers=auth)
-    response = client.put(f'/api/urls/{name}', query_string=data, headers=auth)
+    client.put('/api/urls/i-exist', json={'url': 'http://example.com'}, headers=auth)
+    response = client.put(f'/api/urls/{name}', json=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -465,9 +465,9 @@ def test_patch_url(db, client, shortcut, data, expected, status):
     auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth1)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth2)
-    response = client.patch(f'/api/urls/{shortcut}', query_string=data, headers=auth1)
+    client.put('/api/urls/abc', json={'url': 'http://example.com'}, headers=auth1)
+    client.put('/api/urls/def', json={'url': 'http://example.com'}, headers=auth2)
+    response = client.patch(f'/api/urls/{shortcut}', json=data, headers=auth1)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -499,8 +499,8 @@ def test_patch_url(db, client, shortcut, data, expected, status):
 def test_delete_url(db, client, shortcut, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth)
+    client.put('/api/urls/abc', json={'url': 'http://example.com'}, headers=auth)
+    client.put('/api/urls/def', json={'url': 'http://example.com'}, headers=auth)
     response = client.delete(f'/api/urls/{shortcut}', headers=auth)
 
     assert response.status_code == status
@@ -574,10 +574,10 @@ def test_delete_url(db, client, shortcut, expected, status):
 def test_get_url(db, client, url, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'}, headers=auth)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta.author': 'me'}, headers=auth)
+    client.put('/api/urls/def', json={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
                headers=auth)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=auth)
+    client.put('/api/urls/ghi', json={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
@@ -604,11 +604,11 @@ def test_get_admin_all(db, client):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta.author': 'me'},
                headers=non_admin_auth1)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
+    client.put('/api/urls/def', json={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
                headers=non_admin_auth2)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=admin_auth)
+    client.put('/api/urls/ghi', json={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=admin_auth)
     response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
     expected = [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
@@ -633,10 +633,10 @@ def test_other_user(db, client, method):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta.author': 'me'},
                headers=non_admin_auth1)
     method = getattr(client, method)
-    response = method('/api/urls/abc', query_string={}, headers=non_admin_auth2)
+    response = method('/api/urls/abc', headers=non_admin_auth2)
     expected = {'error': {'code': 'insufficient-permissions',
                           'description': 'You are not allowed to make this request'},
                 'status': 403}
