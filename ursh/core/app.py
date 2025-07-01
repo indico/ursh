@@ -101,7 +101,7 @@ def _register_handlers(app):
     @app.shell_context_processor
     def _extend_shell_context():
         ctx = {'db': db}
-        ctx.update((name, cls) for name, cls in db.Model._decl_class_registry.items() if hasattr(cls, '__table__'))
+        ctx.update((mapper.class_.__name__, mapper.class_) for mapper in db.Model.registry.mappers)
         ctx.update((x, getattr(datetime, x)) for x in ('date', 'time', 'datetime', 'timedelta'))
         return ctx
 

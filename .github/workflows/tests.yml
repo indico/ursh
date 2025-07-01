@@ -9,14 +9,14 @@ on:
 jobs:
   tests:
     name: ${{ matrix.name }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {name: Style, python: '3.9', tox: style}
-          - {name: '3.9', python: '3.9', tox: py39, postgres: true}
+          - {name: Style, python: '3.12', tox: style}
+          - {name: '3.12', python: '3.12', tox: py312, postgres: true}
 
     services:
       postgres:
@@ -28,9 +28,9 @@ jobs:
         options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
@@ -45,7 +45,7 @@ jobs:
         run: echo "::set-output name=dir::$(pip cache dir)"
 
       - name: Cache pip
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: pip|${{ runner.os }}|${{ matrix.python }}|${{ hashFiles('setup.*') }}

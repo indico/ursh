@@ -1,11 +1,11 @@
 import posixpath
+from urllib.parse import urlparse
 
 from flask import current_app
 from flask_marshmallow import Schema
 from marshmallow import ValidationError, fields, validates
 from werkzeug.exceptions import BadRequest, HTTPException
 from werkzeug.routing import RequestRedirect
-from werkzeug.urls import url_parse
 
 from ursh.models import ALPHABET_MANUAL, ALPHABET_RESTRICTED
 
@@ -69,7 +69,7 @@ class URLSchemaRestricted(URLSchema):
 
 
 def endpoint_for_url(url):
-    urldata = url_parse(url)
+    urldata = urlparse(url)
     adapter = current_app.url_map.bind(urldata.netloc)
     try:
         match = adapter.match(urldata.path)

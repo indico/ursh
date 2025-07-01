@@ -1,8 +1,8 @@
 import posixpath
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import pytest
-from werkzeug.urls import url_parse
 
 from ursh.models import URL, Token
 
@@ -359,7 +359,7 @@ def test_create_url(db, app, client, data, expected, status):
             assert data.get('shortcut') == existing_shortcut
         assert parsed_response.get('short_url') is not None
         assert parsed_response.get('owner') is not None
-        shortcut = url_parse(parsed_response['short_url']).path.lstrip('/')
+        shortcut = urlparse(parsed_response['short_url']).path.lstrip('/')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
         assert url.url == data['url']
