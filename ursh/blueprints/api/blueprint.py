@@ -1,15 +1,21 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import Blueprint, g, request
 from sqlalchemy.exc import DataError, SQLAlchemyError
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from ursh import db
-from ursh.blueprints.api.handlers import (create_error_json, handle_bad_requests, handle_conflict, handle_db_errors,
-                                          handle_internal_exceptions, handle_method_not_allowed, handle_not_found)
+from ursh.blueprints.api.handlers import (
+    create_error_json,
+    handle_bad_requests,
+    handle_conflict,
+    handle_db_errors,
+    handle_internal_exceptions,
+    handle_method_not_allowed,
+    handle_not_found,
+)
 from ursh.blueprints.api.resources import TokenResource, URLResource
 from ursh.models import Token
-
 
 bp = Blueprint('urls', __name__, url_prefix='/api')
 
@@ -35,7 +41,7 @@ def authorize_request():
     if token is None or token.is_blocked:
         return error_json
     token.token_uses = Token.token_uses + 1
-    token.last_access = datetime.now(timezone.utc)
+    token.last_access = datetime.now(UTC)
     db.session.commit()
 
     g.token = token

@@ -1,4 +1,5 @@
 import posixpath
+from operator import itemgetter
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -24,20 +25,20 @@ def create_user(db, name, is_admin=False, is_blocked=False):
 
 # Token tests
 
-@pytest.mark.parametrize("admin,data,expected,status_code", [
+@pytest.mark.parametrize(('admin', 'data', 'expected', 'status_code'), (
     (
         # new token is issued
         True,
         {'name': 'abc', 'is_admin': True, 'callback_url': 'http://cern.ch'},
         {'callback_url': 'http://cern.ch', 'is_admin': True, 'is_blocked': False, 'name': 'abc', 'token_uses': 0},
-        201
+        201,
     ),
     (
         # new token is issued without callback
         True,
         {'name': 'abc', 'is_admin': True},
         {'is_admin': True, 'is_blocked': False, 'name': 'abc', 'token_uses': 0},
-        201
+        201,
     ),
     (
         # name is not mentioned
@@ -45,14 +46,14 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         {'is_admin': True, 'callback_url': 'http://cern.ch'},
         {'error': {'args': ['name'], 'code': 'missing-args',
                    'description': 'New tokens need to mention the "name" attribute'}, 'status': 400},
-        400
+        400,
     ),
     (
         # invalid callback URL
         True,
         {'name': 'abc', 'callback_url': 'fake'},
         {'error': {'code': 'validation-error', 'messages': {'callback_url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # non-admin attempt
@@ -60,9 +61,9 @@ def create_user(db, name, is_admin=False, is_blocked=False):
         {'name': 'abc', 'callback_url': 'http://cern.ch'},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
-        403
-    )
-])
+        403,
+    ),
+))
 def test_create_token(db, client, admin, data, expected, status_code):
     if admin:
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
@@ -91,7 +92,7 @@ def test_create_token_name_exists(db, client):
     assert response.get_json() == expected
 
 
-@pytest.mark.parametrize("admin,url,data,expected,status", [
+@pytest.mark.parametrize(('admin', 'url', 'data', 'expected', 'status'), (
     (
         # filter based on name
         True,
@@ -99,20 +100,19 @@ def test_create_token_name_exists(db, client):
         {'name': 'abc'},
         [{'callback_url': 'http://cern.ch', 'is_admin': False,
           'is_blocked': False, 'name': 'abc', 'token_uses': 0}],
-        200
+        200,
     ),
     (
         # get all tokens
         True,
         '/api/tokens/',
         {},
-        [{'callback_url': None, 'is_admin': False, 'is_blocked': False, 'name': 'non-admin', 'token_uses': 0},
+        [{'callback_url': None, 'is_admin': True, 'is_blocked': False, 'name': 'admin', 'token_uses': 5},
          {'callback_url': 'http://cern.ch', 'is_admin': False, 'is_blocked': False, 'name': 'abc', 'token_uses': 0},
          {'callback_url': 'http://a.ch', 'is_admin': True, 'is_blocked': True, 'name': 'abcd', 'token_uses': 0},
          {'callback_url': 'http://a.ch', 'is_admin': False, 'is_blocked': True, 'name': 'abcd1', 'token_uses': 0},
-         {'callback_url': 'http://b.ch', 'is_admin': False, 'is_blocked': False, 'name': 'abcde', 'token_uses': 0},
-         {'callback_url': None, 'is_admin': True, 'is_blocked': False, 'name': 'admin', 'token_uses': 5}],
-        200
+         {'callback_url': 'http://b.ch', 'is_admin': False, 'is_blocked': False, 'name': 'abcde', 'token_uses': 0}],
+        200,
     ),
     (
         # attempt to get token info by non-admin
@@ -121,7 +121,7 @@ def test_create_token_name_exists(db, client):
         {},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
-        403
+        403,
     ),
     (
         # attempt to get specific token info with invalid UUID
@@ -130,7 +130,7 @@ def test_create_token_name_exists(db, client):
         {},
         {'error': {'args': ['api_key'], 'code': 'not-found', 'description': 'API key does not exist'},
          'status': 404},
-        404
+        404,
     ),
     (
         # access specific token from non-admin
@@ -139,7 +139,7 @@ def test_create_token_name_exists(db, client):
         {},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
-        403
+        403,
     ),
     (
         # filter based on other parameters
@@ -147,9 +147,9 @@ def test_create_token_name_exists(db, client):
         '/api/tokens/',
         {'callback_url': 'http://a.ch', 'is_admin': False},
         [{'callback_url': 'http://a.ch', 'is_admin': False, 'is_blocked': True, 'name': 'abcd1', 'token_uses': 0}],
-        200
-    )
-])
+        200,
+    ),
+))
 def test_get_tokens(db, client, admin, url, data, expected, status):
     if admin:
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
@@ -167,9 +167,9 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
 
     assert response.status_code == status
     if isinstance(expected, list):
-        parsed_response = sorted(parsed_response, key=lambda k: k['name'])
-        expected = sorted(expected, key=lambda k: k['name'])
-        for expected_token, returned_token in zip(expected, parsed_response):
+        parsed_response = sorted(parsed_response, key=itemgetter('name'))
+        expected = sorted(expected, key=itemgetter('name'))
+        for expected_token, returned_token in zip(expected, parsed_response, strict=True):
             for key, value in expected_token.items():
                 assert value == returned_token[key]
             if status == 200:
@@ -183,14 +183,14 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
             assert parsed_response.get('last_access') is not None
 
 
-@pytest.mark.parametrize("admin,name,data,expected,status", [
+@pytest.mark.parametrize(('admin', 'name', 'data', 'expected', 'status'), (
     (
         # everything goes right
         True,
         'abc',
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True},
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True, 'name': 'abc', 'token_uses': 0},
-        200
+        200,
     ),
     (
         # try to change the name
@@ -199,7 +199,7 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
         {'name': 'xyz', 'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True},
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True,
          'name': 'abc', 'token_uses': 0},
-        200
+        200,
     ),
     (
         # invalid name
@@ -208,7 +208,7 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True},
         {'error': {'args': ['api_key'], 'code': 'not-found', 'description': 'API key does not exist'},
          'status': 404},
-        404
+        404,
     ),
     (
         # non-existent api key
@@ -216,7 +216,7 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
         str(uuid4()),
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True},
         {'error': {'args': ['api_key'], 'code': 'not-found', 'description': 'API key does not exist'}, 'status': 404},
-        404
+        404,
     ),
     (
         # non-admin access attempt
@@ -225,9 +225,9 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
         {'callback_url': 'http://www.google.com', 'is_admin': True, 'is_blocked': True},
         {'error': {'code': 'insufficient-permissions',
                    'description': 'You are not allowed to make this request'}, 'status': 403},
-        403
-    )
-])
+        403,
+    ),
+))
 def test_token_patch(db, client, admin, name, data, expected, status):
     if admin:
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
@@ -258,11 +258,11 @@ def test_token_patch(db, client, admin, name, data, expected, status):
         assert token.is_blocked == data.get('is_blocked')
 
 
-@pytest.mark.parametrize("admin,expected,status", [
+@pytest.mark.parametrize(('admin', 'expected', 'status'), (
     (True, '', 204),
-    (False, {"error": {"code": "insufficient-permissions",
-                       "description": "You are not allowed to make this request"}, "status": 403}, 403)
-])
+    (False, {'error': {'code': 'insufficient-permissions',
+                       'description': 'You are not allowed to make this request'}, 'status': 403}, 403),
+))
 def test_token_delete(db, client, admin, expected, status):
     if admin:
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
@@ -281,7 +281,7 @@ def test_token_delete(db, client, admin, expected, status):
         assert response.get_json() == expected
 
 
-@pytest.mark.parametrize("method,url,data", [
+@pytest.mark.parametrize(('method', 'url', 'data'), (
     ('post', '/api/tokens/', {'name': 'abc', 'callback_url': 'http://cern.ch'}),
     ('get', '/api/tokens/', {}),
     ('patch', '/api/tokens/abc', {}),
@@ -290,9 +290,9 @@ def test_token_delete(db, client, admin, expected, status):
     ('get', '/api/urls/', {}),
     ('patch', '/api/urls/abc', {}),
     ('delete', '/api/urls/abc', {}),
-    ('put', '/api/urls/abc', {})
-])
-@pytest.mark.parametrize("blocked", [True, False])
+    ('put', '/api/urls/abc', {}),
+))
+@pytest.mark.parametrize('blocked', (True, False))
 def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     headers = make_auth(db, 'blocked', is_admin=True, is_blocked=True) if blocked else None
 
@@ -308,38 +308,38 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
 
 # URL Tests
 
-@pytest.mark.parametrize("data,expected,status", [
+@pytest.mark.parametrize(('data', 'expected', 'status'), (
     (
         # everything works right, a new url is created
         {'url': 'http://cern.ch'},
         {'meta': {}, 'url': 'http://cern.ch'},
-        201
+        201,
     ),
     (
         # everything works right, a new url is created with metadata
         {'url': 'http://cern.ch', 'meta': {'author': 'me', 'a': False}},
         {'meta': {'author': 'me', 'a': False}, 'url': 'http://cern.ch'},
-        201
+        201,
     ),
     (
         # invalid url
         {'url': 'fake'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # empty url
         {'url': ''},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # allow_reuse=true
         {'url': 'http://existing.com', 'allow_reuse': True},
         {'meta': {}, 'url': 'http://existing.com'},
-        400
-    )
-])
+        400,
+    ),
+))
 def test_create_url(db, app, client, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
@@ -367,52 +367,52 @@ def test_create_url(db, app, client, data, expected, status):
         assert response.status_code == status
 
 
-@pytest.mark.parametrize("name,data,expected,status", [
+@pytest.mark.parametrize(('name', 'data', 'expected', 'status'), (
     (
         # everything goes right
-        "my-short-url",
+        'my-short-url',
         {'url': 'http://google.com', 'meta': {'author': 'me'}},
         {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
          'url': 'http://google.com'},
-        201
+        201,
     ),
     (
         # invalid url
-        "my-short-url",
+        'my-short-url',
         {'url': 'google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # empty url
-        "my-short-url",
+        'my-short-url',
         {'url': '', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # url with invalid characters
-        "my-short-url*",
+        'my-short-url*',
         {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # url with slash
-        "my-short-url/i-look-suspicious",
+        'my-short-url/i-look-suspicious',
         {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {},
-        404
+        404,
     ),
     (
         # blacklisted URL
-        "api",
+        'api',
         {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error',
                    'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
-        400
+        400,
     ),
-])
+))
 def test_put_url(db, client, name, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
@@ -430,37 +430,37 @@ def test_put_url(db, client, name, data, expected, status):
         assert url is not None
 
 
-@pytest.mark.parametrize("shortcut,data,expected,status", [
+@pytest.mark.parametrize(('shortcut', 'data', 'expected', 'status'), (
     (
         # everything goes right
-        "abc",
+        'abc',
         {'meta': {'author': 'me'}, 'url': 'http://example.com'},
-        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
-        200
+        200,
     ),
     (
         # nonexistent shortcut
-        "nonexistent",
+        'nonexistent',
         {'meta': {'author': 'me'}, 'url': 'http://example.com'},
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
-        404
+        404,
     ),
     (
         # invalid url
-        "abc",
+        'abc',
         {'meta': {'author': 'me'}, 'url': 'example.com'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
     (
         # empty url
-        "abc",
+        'abc',
         {'meta': {'author': 'me'}, 'url': ''},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
-        400
+        400,
     ),
-])
+))
 def test_patch_url(db, client, shortcut, data, expected, status):
     auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
@@ -482,20 +482,20 @@ def test_patch_url(db, client, shortcut, data, expected, status):
         assert url.token.name == parsed_response.get('owner')
 
 
-@pytest.mark.parametrize("shortcut,expected,status", [
+@pytest.mark.parametrize(('shortcut', 'expected', 'status'), (
     (
         # everything goes right
-        "abc",
+        'abc',
         {},
-        204
+        204,
     ),
     (
         # invalid shortcut
-        "abcd",
+        'abcd',
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
-        404
+        404,
     ),
-])
+))
 def test_delete_url(db, client, shortcut, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
@@ -514,63 +514,63 @@ def test_delete_url(db, client, shortcut, expected, status):
             assert value == parsed_response[key]
 
 
-@pytest.mark.parametrize("url,data,expected,status", [
+@pytest.mark.parametrize(('url', 'data', 'expected', 'status'), (
     (
         # everything goes right
         '/api/urls/',
         {},
-        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'meta': {'a': 'b', 'owner': 'all'}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'},
-         {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
-        200
+        200,
     ),
     (
         # everything goes right, asking for specific shortcut
         '/api/urls/abc',
         {},
-        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
-        200
+        200,
     ),
     (
         # filter based on url
         '/api/urls/',
         {'url': 'http://example.com'},
-        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+         {'meta': {'a': 'b', 'owner': 'all'}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
           'url': 'http://example.com'}],
-        200
+        200,
     ),
     (
         # filter based on metadata fields
         '/api/urls/',
         {'meta.author': 'me'},
-        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'},
-         {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+         {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
           'url': 'http://cern.ch'}],
-        200
+        200,
     ),
     (
         # filter based on both url and metadata fields
         '/api/urls/',
         {'url': 'http://example.com', 'meta.author': 'me'},
-        [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+        [{'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
           'url': 'http://example.com'}],
-        200
+        200,
     ),
     (
         # invalid shortcut
         '/api/urls/xyz',
         {},
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
-        404
-    )
-])
+        404,
+    ),
+))
 def test_get_url(db, client, url, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
@@ -583,9 +583,9 @@ def test_get_url(db, client, url, data, expected, status):
 
     assert response.status_code == status
     if isinstance(expected, list):
-        parsed_response = sorted(parsed_response, key=lambda k: k['short_url'])
-        expected = sorted(expected, key=lambda k: k['short_url'])
-        for expected_url, returned_url in zip(expected, parsed_response):
+        parsed_response = sorted(parsed_response, key=itemgetter('short_url'))
+        expected = sorted(expected, key=itemgetter('short_url'))
+        for expected_url, returned_url in zip(expected, parsed_response, strict=True):
             for key, value in expected_url.items():
                 assert value == returned_url[key]
             if status == 200:
@@ -611,24 +611,24 @@ def test_get_admin_all(db, client):
     client.put('/api/urls/ghi', json={'url': 'http://cern.ch', 'meta': {'author': 'me'}}, headers=admin_auth)
     response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
-    expected = [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
+    expected = [{'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
                  'url': 'http://example.com'},
-                {'meta': {"a": "b", "owner": "all"}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
+                {'meta': {'a': 'b', 'owner': 'all'}, 'short_url': posixpath.join('http://localhost:5000/', 'def'),
                  'url': 'http://example.com'},
-                {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
+                {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'ghi'),
                  'url': 'http://cern.ch'}]
 
     assert response.status_code == 200
-    parsed_response = sorted(parsed_response, key=lambda k: k['url'])
-    expected = sorted(expected, key=lambda k: k['url'])
-    for expected_token, returned_token in zip(expected, parsed_response):
-        for key, value in expected_token.items():
-            assert value == returned_token[key]
-        assert returned_token.get('owner') is not None
-        assert returned_token.get('url') is not None
+    parsed_response = sorted(parsed_response, key=itemgetter('url'))
+    expected = sorted(expected, key=itemgetter('url'))
+    for expected_url, returned_url in zip(expected, parsed_response, strict=True):
+        for key, value in expected_url.items():
+            assert value == returned_url[key]
+        assert returned_url.get('owner') is not None
+        assert returned_url.get('url') is not None
 
 
-@pytest.mark.parametrize("method", ['patch', 'delete'])
+@pytest.mark.parametrize('method', ('patch', 'delete'))
 def test_other_user(db, client, method):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)

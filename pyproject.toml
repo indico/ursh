@@ -17,7 +17,7 @@ requires-python = '~=3.12'
 ursh = 'ursh.cli.core:cli'
 
 [project.optional-dependencies]
-dev = ['pytest', 'isort']
+dev = ['pytest', 'ruff']
 
 [project.urls]
 Issues = 'https://github.com/indico/ursh/issues'

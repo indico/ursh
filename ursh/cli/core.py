@@ -3,7 +3,6 @@ from flask.cli import AppGroup, FlaskGroup
 
 from ursh.cli.util import LazyGroup
 
-
 _cli = AppGroup()
 cli_command = _cli.command
 cli_group = _cli.group
@@ -14,7 +13,7 @@ def _get_ursh_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
     import ursh
-    message = 'ursh v{}'.format(ursh.__version__)
+    message = f'ursh v{ursh.__version__}'
     click.echo(message, ctx.color)
     ctx.exit()
 
@@ -26,7 +25,7 @@ def _create_app():
 
 @click.group(cls=FlaskGroup, create_app=_create_app)
 def cli():
-    """ursh command line interface."""
+    """ursh command line interface."""  # noqa: D403
 
 
 @cli.group(cls=LazyGroup, import_name='ursh.cli.database:cli')

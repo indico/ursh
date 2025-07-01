@@ -25,6 +25,7 @@ class SchemaBase(Schema):
 
 class TokenSchema(SchemaBase):
     """Schema class to validate tokens."""
+
     api_key = fields.Str(description='The token API key - uniquely identifies the token')
     name = fields.Str(description='The token name')
     is_admin = fields.Boolean(description='Is this an admin token?')
@@ -39,6 +40,7 @@ class URLSchema(SchemaBase):
 
     Note: use one of the sub-classes below for validation, depending on the shortcut requirements.
     """
+
     shortcut = fields.Str(description='The generated or manually set URL shortcut')
     url = fields.URL(description='The original URL (the short URL target)')
     short_url = fields.Method('_get_short_url', description='The short URL')

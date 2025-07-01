@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from random import choices
 from uuid import uuid4
 
@@ -7,7 +7,6 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utc import UtcDateTime
 
 from ursh import db
-
 
 ALPHABET_MANUAL = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-'
 ALPHABET_RESTRICTED = '23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
@@ -22,7 +21,7 @@ class Token(db.Model):
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_blocked = db.Column(db.Boolean, nullable=False, default=False)
     token_uses = db.Column(db.Integer, nullable=False, default=0)
-    last_access = db.Column(UtcDateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    last_access = db.Column(UtcDateTime, nullable=False, default=lambda: datetime.now(tz=UTC))
     callback_url = db.Column(db.String, nullable=True)
 
     urls = db.relationship('URL', back_populates='token')

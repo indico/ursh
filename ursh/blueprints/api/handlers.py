@@ -22,7 +22,7 @@ def handle_conflict(error):
 
 
 def handle_internal_exceptions(error):
-    current_app.logger.exception('Unexpected error')
+    current_app.logger.exception('Unexpected error')  # noqa: LOG004
     return create_error_json(500, 'internal-error', 'Sorry, something went wrong')
 
 
@@ -31,8 +31,8 @@ def create_error_json(status_code, error_code, message, **kwargs):
         'status': status_code,
         'error': {
             'code': error_code,
-            'description': message
-        }
+            'description': message,
+        },
     }
     message_dict['error'].update(kwargs)
     return jsonify(message_dict), status_code
