@@ -106,15 +106,16 @@ def database(app, postgresql):
     your modifications are not persistent!
     """
     app.config['SQLALCHEMY_DATABASE_URI'] = postgresql
+    app.extensions.pop('sqlalchemy', None)
     db_.init_app(app)
-    if 'URSH_TEST_DATABASE_URI' in os.environ == '1':
+    if 'URSH_TEST_DATABASE_URI' in os.environ and os.environ.get('URSH_TEST_DATABASE_HAS_TABLES') == '1':
         yield db_
         return
     with app.app_context():
         db_.create_all()
     yield db_
-    db_.session.remove()
     with app.app_context():
+        db_.session.remove()
         db_.drop_all()
 
 

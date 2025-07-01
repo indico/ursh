@@ -19,7 +19,7 @@ def _get_ursh_version(ctx, param, value):
     ctx.exit()
 
 
-def _create_app(info):
+def _create_app():
     from ursh.core.app import create_app
     return create_app()
 

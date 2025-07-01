@@ -1,8 +1,8 @@
 import posixpath
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import pytest
-from werkzeug.urls import url_parse
 
 from ursh.models import URL, Token
 
@@ -68,7 +68,7 @@ def test_create_token(db, client, admin, data, expected, status_code):
         auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
-    response = client.post('/api/tokens/', data=data, headers=auth)
+    response = client.post('/api/tokens/', json=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status_code
@@ -83,8 +83,8 @@ def test_create_token(db, client, admin, data, expected, status_code):
 
 def test_create_token_name_exists(db, client):
     auth = make_auth(db, 'admin', is_admin=True, is_blocked=False)
-    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    response = client.post('/api/tokens/', data={'name': 'abc'}, headers=auth)
+    client.post('/api/tokens/', json={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    response = client.post('/api/tokens/', json={'name': 'abc'}, headers=auth)
     expected = {'error': {'args': ['name'], 'code': 'conflict', 'description': 'Token with name exists'}, 'status': 409}
 
     assert response.status_code == 409
@@ -156,17 +156,17 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
+    client.post('/api/tokens/', json={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    client.post('/api/tokens/', json={'name': 'abcd', 'callback_url': 'http://a.ch',
                                       'is_admin': True, 'is_blocked': True}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
+    client.post('/api/tokens/', json={'name': 'abcd1', 'callback_url': 'http://a.ch',
                                       'is_admin': False, 'is_blocked': True}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
+    client.post('/api/tokens/', json={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
-    if type(expected) == list:
+    if isinstance(expected, list):
         parsed_response = sorted(parsed_response, key=lambda k: k['name'])
         expected = sorted(expected, key=lambda k: k['name'])
         for expected_token, returned_token in zip(expected, parsed_response):
@@ -234,15 +234,15 @@ def test_token_patch(db, client, admin, name, data, expected, status):
     else:
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcd', 'callback_url': 'http://a.ch',
+    client.post('/api/tokens/', json={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=auth)
+    client.post('/api/tokens/', json={'name': 'abcd', 'callback_url': 'http://a.ch',
                                       'is_admin': True, 'is_blocked': True}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcd1', 'callback_url': 'http://a.ch',
+    client.post('/api/tokens/', json={'name': 'abcd1', 'callback_url': 'http://a.ch',
                                       'is_admin': False, 'is_blocked': True}, headers=auth)
-    client.post('/api/tokens/', data={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
+    client.post('/api/tokens/', json={'name': 'abcde', 'callback_url': 'http://b.ch'}, headers=auth)
     token = Token.query.filter_by(name=name).one_or_none()
     uuid = token.api_key if token else name  # assume we want to use the name as an API key if it is not present
-    response = client.patch(f'/api/tokens/{uuid}', query_string=data, headers=auth)
+    response = client.patch(f'/api/tokens/{uuid}', json=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -270,7 +270,7 @@ def test_token_delete(db, client, admin, expected, status):
         auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
     admin_auth = make_auth(db, 'admin_', is_admin=True, is_blocked=False)
 
-    client.post('/api/tokens/', data={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
+    client.post('/api/tokens/', json={'name': 'abc', 'callback_url': 'http://cern.ch'}, headers=admin_auth)
     api_key = Token.query.filter_by(name='abc').one_or_none().api_key
     response = client.delete(f'/api/tokens/{api_key}', headers=auth)
 
@@ -317,8 +317,8 @@ def test_blocked_or_unauthorized(db, client, method, url, data, blocked):
     ),
     (
         # everything works right, a new url is created with metadata
-        {'url': 'http://cern.ch', 'meta.author': 'me', 'meta.a': False},
-        {'meta': {"author": "me", "a": "False"}, 'url': 'http://cern.ch'},
+        {'url': 'http://cern.ch', 'meta': {'author': 'me', 'a': False}},
+        {'meta': {'author': 'me', 'a': False}, 'url': 'http://cern.ch'},
         201
     ),
     (
@@ -345,11 +345,11 @@ def test_create_url(db, app, client, data, expected, status):
 
     existing_shortcut = ''
     if data.get('allow_reuse'):
-        existing = client.post('/api/urls/', query_string={'url': 'http://existing.com'}, headers=auth)
+        existing = client.post('/api/urls/', json={'url': 'http://existing.com'}, headers=auth)
         existing = existing.get_json()
         existing_short_url = existing.get('short_url')
         assert existing_short_url is not None
-    response = client.post('/api/urls/', query_string=data, headers=auth)
+    response = client.post('/api/urls/', json=data, headers=auth)
     parsed_response = response.get_json()
 
     for key, value in expected.items():
@@ -359,7 +359,7 @@ def test_create_url(db, app, client, data, expected, status):
             assert data.get('shortcut') == existing_shortcut
         assert parsed_response.get('short_url') is not None
         assert parsed_response.get('owner') is not None
-        shortcut = url_parse(parsed_response['short_url']).path.lstrip('/')
+        shortcut = urlparse(parsed_response['short_url']).path.lstrip('/')
         url = URL.query.filter_by(shortcut=shortcut).one_or_none()
         assert url is not None
         assert url.url == data['url']
@@ -371,53 +371,53 @@ def test_create_url(db, app, client, data, expected, status):
     (
         # everything goes right
         "my-short-url",
-        {'url': 'http://google.com', 'meta.author': 'me'},
-        {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
+        {'url': 'http://google.com', 'meta': {'author': 'me'}},
+        {'meta': {'author': 'me'}, 'short_url': posixpath.join('http://localhost:5000/', 'my-short-url'),
          'url': 'http://google.com'},
         201
     ),
     (
         # invalid url
         "my-short-url",
-        {'url': 'google.com', 'meta.author': 'me'},
+        {'url': 'google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "my-short-url",
-        {'url': '', 'meta.author': 'me'},
+        {'url': '', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # url with invalid characters
         "my-short-url*",
-        {'url': 'https://google.com', 'meta.author': 'me'},
+        {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error', 'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
         400
     ),
     (
         # url with slash
         "my-short-url/i-look-suspicious",
-        {'url': 'https://google.com', 'meta.author': 'me'},
+        {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {},
         404
     ),
     (
         # blacklisted URL
         "api",
-        {'url': '', 'meta.author': 'me'},
+        {'url': 'https://google.com', 'meta': {'author': 'me'}},
         {'error': {'code': 'validation-error',
-                   'messages': {'shortcut': ['Invalid value.'], 'url': ['Not a valid URL.']}}, 'status': 400},
+                   'messages': {'shortcut': ['Invalid value.']}}, 'status': 400},
         400
     ),
 ])
 def test_put_url(db, client, name, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/i-exist', query_string={'url': 'http://example.com'}, headers=auth)
-    response = client.put(f'/api/urls/{name}', query_string=data, headers=auth)
+    client.put('/api/urls/i-exist', json={'url': 'http://example.com'}, headers=auth)
+    response = client.put(f'/api/urls/{name}', json=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -434,7 +434,7 @@ def test_put_url(db, client, name, data, expected, status):
     (
         # everything goes right
         "abc",
-        {'meta.author': 'me', 'url': 'http://example.com'},
+        {'meta': {'author': 'me'}, 'url': 'http://example.com'},
         {'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
          'url': 'http://example.com'},
         200
@@ -442,21 +442,21 @@ def test_put_url(db, client, name, data, expected, status):
     (
         # nonexistent shortcut
         "nonexistent",
-        {'meta.author': 'me', 'url': 'http://example.com'},
+        {'meta': {'author': 'me'}, 'url': 'http://example.com'},
         {'error': {'args': ['shortcut'], 'code': 'not-found', 'description': 'Shortcut does not exist'}, 'status': 404},
         404
     ),
     (
         # invalid url
         "abc",
-        {'meta.author': 'me', 'url': 'example.com'},
+        {'meta': {'author': 'me'}, 'url': 'example.com'},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
     (
         # empty url
         "abc",
-        {'meta.author': 'me', 'url': ''},
+        {'meta': {'author': 'me'}, 'url': ''},
         {'error': {'code': 'validation-error', 'messages': {'url': ['Not a valid URL.']}}, 'status': 400},
         400
     ),
@@ -465,9 +465,9 @@ def test_patch_url(db, client, shortcut, data, expected, status):
     auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth1)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth2)
-    response = client.patch(f'/api/urls/{shortcut}', query_string=data, headers=auth1)
+    client.put('/api/urls/abc', json={'url': 'http://example.com'}, headers=auth1)
+    client.put('/api/urls/def', json={'url': 'http://example.com'}, headers=auth2)
+    response = client.patch(f'/api/urls/{shortcut}', json=data, headers=auth1)
     parsed_response = response.get_json()
 
     assert response.status_code == status
@@ -499,8 +499,8 @@ def test_patch_url(db, client, shortcut, data, expected, status):
 def test_delete_url(db, client, shortcut, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com'}, headers=auth)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com'}, headers=auth)
+    client.put('/api/urls/abc', json={'url': 'http://example.com'}, headers=auth)
+    client.put('/api/urls/def', json={'url': 'http://example.com'}, headers=auth)
     response = client.delete(f'/api/urls/{shortcut}', headers=auth)
 
     assert response.status_code == status
@@ -574,23 +574,23 @@ def test_delete_url(db, client, shortcut, expected, status):
 def test_get_url(db, client, url, data, expected, status):
     auth = make_auth(db, 'non-admin', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'}, headers=auth)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta': {'author': 'me'}}, headers=auth)
+    client.put('/api/urls/def', json={'url': 'http://example.com', 'meta': {'owner': 'all', 'a': 'b'}},
                headers=auth)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=auth)
+    client.put('/api/urls/ghi', json={'url': 'http://cern.ch', 'meta': {'author': 'me'}}, headers=auth)
     response = client.get(url, query_string=data, headers=auth)
     parsed_response = response.get_json()
 
     assert response.status_code == status
-    if type(expected) == list:
+    if isinstance(expected, list):
         parsed_response = sorted(parsed_response, key=lambda k: k['short_url'])
         expected = sorted(expected, key=lambda k: k['short_url'])
-        for expected_token, returned_token in zip(expected, parsed_response):
-            for key, value in expected_token.items():
-                assert value == returned_token[key]
+        for expected_url, returned_url in zip(expected, parsed_response):
+            for key, value in expected_url.items():
+                assert value == returned_url[key]
             if status == 200:
-                assert returned_token.get('owner') is not None
-                assert returned_token.get('url') is not None
+                assert returned_url.get('owner') is not None
+                assert returned_url.get('url') is not None
     else:
         for key, value in expected.items():
             assert value == parsed_response[key]
@@ -604,11 +604,11 @@ def test_get_admin_all(db, client):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta': {'author': 'me'}},
                headers=non_admin_auth1)
-    client.put('/api/urls/def', query_string={'url': 'http://example.com', 'meta.owner': 'all', 'meta.a': 'b'},
+    client.put('/api/urls/def', json={'url': 'http://example.com', 'meta': {'owner': 'all', 'a': 'b'}},
                headers=non_admin_auth2)
-    client.put('/api/urls/ghi', query_string={'url': 'http://cern.ch', 'meta.author': 'me'}, headers=admin_auth)
+    client.put('/api/urls/ghi', json={'url': 'http://cern.ch', 'meta': {'author': 'me'}}, headers=admin_auth)
     response = client.get('/api/urls/', query_string={'all': True}, headers=admin_auth)
     parsed_response = response.get_json()
     expected = [{'meta': {"author": "me"}, 'short_url': posixpath.join('http://localhost:5000/', 'abc'),
@@ -633,10 +633,10 @@ def test_other_user(db, client, method):
     non_admin_auth1 = make_auth(db, 'non-admin-1', is_admin=False, is_blocked=False)
     non_admin_auth2 = make_auth(db, 'non-admin-2', is_admin=False, is_blocked=False)
 
-    client.put('/api/urls/abc', query_string={'url': 'http://example.com', 'meta.author': 'me'},
+    client.put('/api/urls/abc', json={'url': 'http://example.com', 'meta': {'author': 'me'}},
                headers=non_admin_auth1)
     method = getattr(client, method)
-    response = method('/api/urls/abc', query_string={}, headers=non_admin_auth2)
+    response = method('/api/urls/abc', headers=non_admin_auth2)
     expected = {'error': {'code': 'insufficient-permissions',
                           'description': 'You are not allowed to make this request'},
                 'status': 403}

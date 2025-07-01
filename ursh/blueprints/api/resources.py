@@ -7,7 +7,7 @@ from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
 from ursh import db
 from ursh.models import URL, Token
-from ursh.schemas import TokenSchema, URLSchemaManual, URLSchemaRestricted
+from ursh.schemas import ShortcutSchemaManual, ShortcutSchemaRestricted, TokenSchema, URLSchema
 from ursh.util.decorators import admin_only, authorize_request_for_url, marshal_many_or_one
 
 
@@ -214,7 +214,7 @@ class TokenResource(MethodResource):
 
     @admin_only
     @marshal_many_or_one(TokenSchema, 'api_key', code=200)
-    @use_kwargs(TokenSchema)
+    @use_kwargs(TokenSchema, location='query')
     def get(self, api_key=None, **kwargs):
         """Obtain one or more tokens.
         ---
@@ -302,8 +302,9 @@ class URLResource(MethodResource):
         401:
           description: not authorized
     """
-    @marshal_with(URLSchemaRestricted, code=201)
-    @use_kwargs(URLSchemaRestricted)
+    @marshal_with(URLSchema, code=201)
+    @use_kwargs(URLSchema)
+    @use_kwargs(ShortcutSchemaRestricted, location='view_args')
     def post(self, **kwargs):
         """Create a new URL object.
         ---
@@ -369,9 +370,10 @@ class URLResource(MethodResource):
                                 kwargs.get('meta', {}))
         return new_url, 201
 
-    @use_kwargs(URLSchemaManual)
+    @use_kwargs(URLSchema)
+    @use_kwargs(ShortcutSchemaManual, location='view_args')
     @authorize_request_for_url
-    @marshal_with(URLSchemaManual, code=201)
+    @marshal_with(URLSchema, code=201)
     def put(self, shortcut=None, **kwargs):
         """Put a new URL object.
         ---
@@ -445,9 +447,10 @@ class URLResource(MethodResource):
                                 kwargs.get('meta', {}))
         return new_url, 201
 
-    @use_kwargs(URLSchemaManual)
+    @use_kwargs(URLSchema)
+    @use_kwargs(ShortcutSchemaManual, location='view_args')
     @authorize_request_for_url
-    @marshal_with(URLSchemaManual)
+    @marshal_with(URLSchema)
     def patch(self, shortcut=None, **kwargs):
         """Modify an existing URL object.
         ---
@@ -518,7 +521,7 @@ class URLResource(MethodResource):
         return url
 
     @authorize_request_for_url
-    @use_kwargs(URLSchemaManual)
+    @use_kwargs(ShortcutSchemaManual)
     def delete(self, shortcut=None, **kwargs):
         """Delete an existing URL object.
         ---
@@ -561,8 +564,8 @@ class URLResource(MethodResource):
         current_app.logger.info('URL deleted by %s: %s -> <%s>', g.token.name, url.shortcut, url.url)
         return Response(status=204)
 
-    @marshal_many_or_one(URLSchemaManual, 'shortcut', code=200)
-    @use_kwargs(URLSchemaManual)
+    @marshal_many_or_one(URLSchema, 'shortcut', code=200)
+    @use_kwargs(URLSchema, location='query')
     @authorize_request_for_url
     def get(self, shortcut=None, **kwargs):
         """Obtain one or more URL objects.
