@@ -2,6 +2,7 @@ from uuid import UUID
 
 from flask import Response, current_app, g
 from flask_apispec import MethodResource, marshal_with, use_kwargs
+from marshmallow import fields
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed, NotFound
 
@@ -31,6 +32,7 @@ class TokenResource(MethodResource):
         401:
           description: not authorized
     """
+
     @admin_only
     @marshal_with(TokenSchema, code=201)
     @use_kwargs(TokenSchema)
@@ -270,8 +272,7 @@ class TokenResource(MethodResource):
         if not api_key:
             filter_params = ['name', 'is_admin', 'is_blocked', 'callback_url']
             filter_dict = {key: value for key, value in kwargs.items() if key in filter_params}
-            tokens = Token.query.filter_by(**filter_dict)
-            return tokens
+            return Token.query.filter_by(**filter_dict).all()
         try:
             UUID(api_key)
         except ValueError:
@@ -302,6 +303,7 @@ class URLResource(MethodResource):
         401:
           description: not authorized
     """
+
     @marshal_with(URLSchema, code=201)
     @use_kwargs(URLSchema)
     @use_kwargs(ShortcutSchemaRestricted, location='view_args')
@@ -566,6 +568,9 @@ class URLResource(MethodResource):
 
     @marshal_many_or_one(URLSchema, 'shortcut', code=200)
     @use_kwargs(URLSchema, location='query')
+    @use_kwargs({
+        'all': fields.Boolean(load_default=False),
+    }, location='query')
     @authorize_request_for_url
     def get(self, shortcut=None, **kwargs):
         """Obtain one or more URL objects.

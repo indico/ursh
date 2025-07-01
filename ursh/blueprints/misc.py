@@ -1,6 +1,5 @@
 from flask import Blueprint, Response, current_app, redirect
 
-
 bp = Blueprint('misc', __name__)
 
 

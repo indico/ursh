@@ -15,7 +15,6 @@ from ursh import db
 from ursh.util.db import import_all_models
 from ursh.util.nested_query_parser import NestedQueryParser
 
-
 CONFIG_OPTIONS = {
     'SQLALCHEMY_DATABASE_URI': 'str',
     'USE_PROXY': 'bool',
@@ -32,7 +31,7 @@ INTERNAL_URLS = frozenset({'api', 'static', 'swagger', 'swagger-ui', 'flask-apis
 
 
 def create_app(config_file=None, testing=False):
-    """Factory to create the Flask application
+    """Create the Flask application.
 
     :param config_file: A python file from which to load the config.
                         If omitted, the config file must be set using

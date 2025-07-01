@@ -1,7 +1,3 @@
-"""
-Taken from the sample custom parser on http://webargs.readthedocs.io/en/latest/advanced.html#custom-parsers
-"""
-
 import re
 
 from webargs.flaskparser import FlaskParser
@@ -12,6 +8,7 @@ class NestedQueryParser(FlaskParser):
         return _structure_dict(req.args)
 
 
+# Taken from the sample custom parser on http://webargs.readthedocs.io/en/latest/advanced.html#custom-parsers
 def _structure_dict(dict_):
     def structure_dict_pair(r, key, value):
         m = re.match(r'(\w+)\.(.*)', key)

@@ -14,7 +14,7 @@ class LazyGroup(click.Group):
 
     def __init__(self, import_name, **kwargs):
         self._import_name = import_name
-        super(LazyGroup, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @cached_property
     def _impl(self):

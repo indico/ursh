@@ -30,10 +30,10 @@ def import_all_models(package_name):
     """
     package_root = _get_package_root_path(package_name)
     modules = []
-    for root, dirs, files in os.walk(package_root):
+    for root, _dirs, files in os.walk(package_root):
         if os.path.basename(root) == 'models':
             package = os.path.relpath(root, package_root).replace(os.sep, '.')
-            modules += ['{}.{}.{}'.format(package_name, package, name[:-3])
+            modules += [f'{package_name}.{package}.{name[:-3]}'
                         for name in files
                         if name.endswith('.py') and name != 'blueprint.py' and not name.endswith('_test.py')]
 

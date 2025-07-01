@@ -15,30 +15,30 @@ def _print_usage(command):
 
 
 def _success(msg):
-    click.echo('\n[SUCCESS] {}'.format(msg))
+    click.echo(f'\n[SUCCESS] {msg}')
     sys.exit(0)
 
 
 def _failure(msg):
-    click.echo('\n[FAILURE] {}'.format(msg))
+    click.echo(f'\n[FAILURE] {msg}')
     sys.exit(1)
 
 
 def _print_api_key(token):
     role = 'admin' if token.is_admin else 'user'
-    click.echo('Name: {name}'.format(name=token.name))
-    click.echo('Role: {role}'.format(role=role))
-    click.echo('API key: {key}'.format(key=token.api_key))
-    click.echo('Blocked: {blocked}'.format(blocked=token.is_blocked))
+    click.echo(f'Name: {token.name}')
+    click.echo(f'Role: {role}')
+    click.echo(f'API key: {token.api_key}')
+    click.echo(f'Blocked: {token.is_blocked}')
 
 
 def _create_api_key(role, name, blocked):
-    token = Token(name=name, is_admin=True if role == 'admin' else False, is_blocked=blocked)
+    token = Token(name=name, is_admin=(role == 'admin'), is_blocked=blocked)
     try:
         db.session.add(token)
         db.session.commit()
     except IntegrityError:
-        _failure('An API key with the same name ("{name}") already exists.'.format(name=name))
+        _failure(f'An API key with the same name ("{name}") already exists.')
     _print_api_key(token)
     if blocked:
         _success('The above listed API key is blocked - you will not be able to use it until it is unblocked.')
@@ -61,7 +61,7 @@ def _toggle_api_key_block(blocked, **kwargs):
 def _validate_filters_or_die(filters, command):
     if not any(filters.values()):
         _print_usage(command)
-        _failure('{method}: please specify at least one option.'.format(method=command.name))
+        _failure(f'{command.name}: please specify at least one option.')
 
 
 @cli_group()
@@ -110,8 +110,8 @@ def get(**kwargs):
         _failure('No API key was found for the specified filters.')
 
 
-@cli.command()
-def list():
+@cli.command('list')
+def list_():
     """List all API keys."""
     tokens = Token.query.order_by(Token.name).all()
     for token in tokens:
