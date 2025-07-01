@@ -166,7 +166,7 @@ def test_get_tokens(db, client, admin, url, data, expected, status):
     parsed_response = response.get_json()
 
     assert response.status_code == status
-    if type(expected) == list:
+    if isinstance(expected, list):
         parsed_response = sorted(parsed_response, key=lambda k: k['name'])
         expected = sorted(expected, key=lambda k: k['name'])
         for expected_token, returned_token in zip(expected, parsed_response):
@@ -582,7 +582,7 @@ def test_get_url(db, client, url, data, expected, status):
     parsed_response = response.get_json()
 
     assert response.status_code == status
-    if type(expected) == list:
+    if isinstance(expected, list):
         parsed_response = sorted(parsed_response, key=lambda k: k['short_url'])
         expected = sorted(expected, key=lambda k: k['short_url'])
         for expected_url, returned_url in zip(expected, parsed_response):
